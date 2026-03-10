@@ -1,0 +1,702 @@
+./include/wisp/content/llcache.h:275: * \todo Make the key an enumeration, to avoid needless string comparisons
+./include/wisp/content/llcache.h:276: * \todo Forcing the client to parse the header value seems wrong.
+./include/wisp/content/llcache.h:279: * \todo Deal with multiple headers of the same key (e.g. Set-Cookie)
+./include/wisp/content/handlers/html/html_save.h:23: * \todo Investigate altering this API as it is only used for
+./include/wisp/content/content.h:150:        /** \todo Consider getting screen_width, screen_height too. */
+./include/wisp/content/hlcache.h:114: * \todo The above rules should be encoded in the handler_map.
+./include/wisp/content/hlcache.h:116: * \todo Is there any way to sensibly reduce the number of parameters here?
+./include/wisp/content/hlcache.h:154: * \todo This may not be correct. Ideally, the client should never need to
+./include/wisp/content/fetch.h:85:        /** \todo Use nsurl */
+./include/wisp/utils/string.h:38: * @todo determine if squash_whitespace utf-8 safe and that it needs to be
+./include/wisp/utils/utils.h:23: * \todo Many of these functions and macros should have their own headers.
+./include/wisp/utils/corestringlist.h:231:CORESTRING_DOM_STRING(DOMNodeInsertedIntoDocument);
+./include/wisp/desktop/local_history.h:130: * \todo the returned url should be a referenced nsurl.
+./include/wisp/browser_window.h:701: * \todo This does not consider behaviour wrt frames
+./include/wisp/content_type.h:40:    // TODO, implement this in the UI
+./include/wisp/window.h:85:     * @todo this is used to update scroll bars does it need
+./contrib/quickjs-ng/dtoa.c:39:   TODO:
+./contrib/quickjs-ng/repl.js:671:                    // TODO(chqrlie): this is incorrect for a/i<TAB>...
+./contrib/quickjs-ng/repl.js:1736:            // TODO(chqrlie) parse partial number syntax
+./contrib/quickjs-ng/repl.js:1737:            // TODO(chqrlie) special case bignum
+./contrib/quickjs-ng/qjsc.c:338:// TODO(bnoordhuis) share with qjs.c maybe
+./contrib/quickjs-ng/quickjs.c:3082:        // TODO(chqrlie): this does not work if `str` has UTF-8 encoded contents
+./contrib/quickjs-ng/quickjs.c:3435:// TODO(chqrlie): use string concatenation instead of UTF-8 conversion
+./contrib/quickjs-ng/quickjs.c:5330:    // TODO(bnoordhuis) switch realms like js_call_c_function does
+./contrib/quickjs-ng/quickjs.c:5449:    // TODO(bnoordhuis) switch realms like js_call_c_function does
+./contrib/quickjs-ng/quickjs.c:6438:            /* TODO */
+./contrib/quickjs-ng/quickjs.c:9025:    // TODO(bnoordhuis) return JSProperty slot and update in place
+./contrib/quickjs-ng/quickjs.c:22662:        // TODO(bnoordhuis) roll into OP_init_ctor
+./contrib/quickjs-ng/quickjs.c:22817:                    // TODO(bnoordhuis) pass as argument to init method?
+./contrib/quickjs-ng/quickjs.c:34882:            /* TODO(saghul): encoding for tagged integers and keyword-ish atoms could be
+./contrib/quickjs-ng/quickjs.c:37053:    // TODO(bnoordhuis) add fast path for arrays but as groupBy() is
+./contrib/quickjs-ng/quickjs.c:39238:    // TODO(bnoordhuis) add fast path for fast arrays
+./contrib/quickjs-ng/quickjs.c:42111:    // TODO(bnoordhuis) don't clone when input is well-formed
+./contrib/quickjs-ng/quickjs.c:42968:    // TODO(bnoordhuis) skip normalization when input is latin1
+./contrib/quickjs-ng/quickjs.c:42975:    // TODO(bnoordhuis) skip normalization when input is latin1
+./contrib/quickjs-ng/quickjs.c:44824:    // TODO(bnoordhuis) query 'u' flag the same way?
+./contrib/quickjs-ng/quickjs.c:45152:    // TODO(bnoordhuis) query 'u' flag the same way?
+./contrib/quickjs-ng/quickjs.c:51987:    // TODO(bnoordhuis) mildly inefficient because JS_NewGlobalCConstructor
+./contrib/quickjs-ng/quickjs.c:52532:            // TODO(bnoordhuis) support externally managed RABs
+./contrib/quickjs-ng/quickjs.c:52577:    // TODO(bnoordhuis) support externally managed RABs
+./contrib/quickjs-ng/quickjs.c:55501:/* TODO(saghul) make this public and not dependent on typed arrays? */
+./contrib/quickjs-ng/quickjs.c:55669:    // TODO(saghul): short-circuit if the refcount is 1?
+./contrib/quickjs-ng/quickjs.h:509:/* Only used for running 262 tests. TODO(saghul) add build time flag. */
+./contrib/quickjs-ng/tests/test_builtin.js:760:    // TODO: Fix rounding errors on Windows/Cygwin.
+./contrib/quickjs-ng/cutils.c:450:    // TODO: handle more than 1 byte at a time
+./contrib/quickjs-ng/libregexp.c:35:  TODO:
+./contrib/quickjs-ng/libregexp.c:770:                // TODO(chqrlie): should handle non BMP-1 code points in
+./contrib/quickjs-ng/quickjs-libc.c:112:/* TODO:
+./contrib/quickjs-ng/quickjs-libc.c:330:                    // TODO(chqrlie) need an API to wrap charCodeAt and codePointAt */
+./contrib/quickjs-ng/quickjs-libc.c:2200:// TODO(bnoordhuis) accept string as first arg and eval at timer expiry
+./contrib/quickjs-ng/quickjs-libc.c:2201:// TODO(bnoordhuis) retain argv[2..] as args for callback if argc > 2
+./contrib/libsvgtiny/src/svgtiny_parse.c:439:     * \todo deal with illegal references (circular etc)
+./contrib/libsvgtiny/src/svgtiny_parse.c:442:     * \todo parsing the fragment out of the url only implements same
+./contrib/libsvgtiny/src/svgtiny_parse.c:774:    /** \todo do something with the alpha */
+./contrib/libsvgtiny/src/svgtiny_parse.c:861: * /todo this does not cope with any url that is not a fragment which
+./contrib/libsvgtiny/src/svgtiny_parse.c:1443: * \todo this does not cope with currentColor or transparent and supports only
+./contrib/libnsutils/src/time.c:102:    /** \todo Implement this properly! */
+./contrib/libnsutils/src/libwapcaplet.c:217:            /** @todo Test this somehow? */
+./contrib/libhubbub/docs/Todo:1:TODO list
+./contrib/libhubbub/src/charset/detect.c:69:    /** \todo We probably want to wait for ~512 bytes of data / 500ms here
+./contrib/libhubbub/src/charset/detect.c:127:    /** \todo Charset autodetection */
+./contrib/libhubbub/src/treebuilder/in_body.c:107:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:121:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:295:        /** \todo ruby */
+./contrib/libhubbub/src/treebuilder/in_body.c:315:            /** \todo ack sc flag */
+./contrib/libhubbub/src/treebuilder/in_body.c:325:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:379:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:395:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:409:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:428:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:493:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:515:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:578:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:641:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:770:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:823:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:975:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1069:        /** \todo Localisation */
+./contrib/libhubbub/src/treebuilder/in_body.c:1216:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1227:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1249:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1268:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1292:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1301:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1324:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1373:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1392:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1409:    /** \todo optimise this */
+./contrib/libhubbub/src/treebuilder/in_body.c:1430:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1433:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1611:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1622:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1632:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:1985:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:2004:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:2023:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:2074:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_body.c:2079:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select_in_table.c:34:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select_in_table.c:40:                /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/in_column_group.c:38:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_column_group.c:49:            /** \todo ack sc flag */
+./contrib/libhubbub/src/treebuilder/in_column_group.c:58:            /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/in_column_group.c:61:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_column_group.c:67:        /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/after_body.c:65:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_body.c:74:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_body.c:83:            /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/after_body.c:84:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_body.c:87:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/treebuilder.c:685:    /** \todo fragment parsing algorithm */
+./contrib/libhubbub/src/treebuilder/treebuilder.c:921:            /** \todo Can we optimise this?
+./contrib/libhubbub/src/treebuilder/treebuilder.c:937:    /** \todo reduce allocated stack size once there's enough free */
+./contrib/libhubbub/src/treebuilder/after_after_body.c:49:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_after_body.c:55:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table_body.c:69:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table_body.c:100:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table_body.c:130:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table_body.c:149:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_cell.c:39:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_cell.c:71:            /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/in_cell.c:88:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_cell.c:100:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_cell.c:103:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_cell.c:109:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/before_html.c:31:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/before_html.c:100:        /** \todo cache selection algorithm */
+./contrib/libhubbub/src/treebuilder/in_row.c:54:    /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/in_row.c:131:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_caption.c:35:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_caption.c:48:            /** \todo parse error if type == TABLE */
+./contrib/libhubbub/src/treebuilder/in_caption.c:52:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_caption.c:73:        /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/in_caption.c:78:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/initial.c:207:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/initial.c:220:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/initial.c:251:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_head.c:38:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_head.c:59:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_head.c:75:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_head.c:86:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_foreign_content.c:330:    /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_foreign_content.c:365:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_foreign_content.c:422:                /** \todo ack sc flag */
+./contrib/libhubbub/src/treebuilder/in_head.c:41:    /** \todo ack sc flag */
+./contrib/libhubbub/src/treebuilder/in_head.c:110:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head.c:121:            /** \todo ack sc flag */
+./contrib/libhubbub/src/treebuilder/in_head.c:139:            /** \todo need to ensure that the client callback
+./contrib/libhubbub/src/treebuilder/in_head.c:144:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head.c:156:        } /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_after_frameset.c:39:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_after_frameset.c:51:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head_noscript.c:37:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head_noscript.c:51:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head_noscript.c:53:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head_noscript.c:63:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head_noscript.c:66:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_head_noscript.c:70:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:32:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:42:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:53:            /** \todo ack sc flag */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:57:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:69:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:81:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_frameset.c:85:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/generic_rcdata.c:56:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/generic_rcdata.c:66:        /** \todo if the current node's a script,
+./contrib/libhubbub/src/treebuilder/generic_rcdata.c:68:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select.c:41:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select.c:78:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select.c:86:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select.c:104:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select.c:112:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_select.c:120:                /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_frameset.c:32:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_frameset.c:43:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_frameset.c:53:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_frameset.c:60:            /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/after_frameset.c:61:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/after_frameset.c:64:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/before_head.c:38:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/before_head.c:58:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table.c:54:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table.c:88:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table.c:169:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table.c:190:            /** \todo fragment case */
+./contrib/libhubbub/src/treebuilder/in_table.c:197:            /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/in_table.c:209:        /** \todo parse error */
+./contrib/libhubbub/src/treebuilder/element-type.h:117:    /**< \todo Enumerate phrasing elements */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:511: * \todo make some of these inline functions (type-safety)
+./contrib/libhubbub/src/tokeniser/tokeniser.c:512: * \todo document them properly here
+./contrib/libhubbub/src/tokeniser/tokeniser.c:777:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:782:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:813:    /**\todo fragment case */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:865:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:903:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:906:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1009:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1131:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1176:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1198:        /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1209:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1365:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1452:        /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1646:        /** \todo parse error if state != COMMENT_END */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1805:            /** \todo parse error */
+./contrib/libhubbub/src/tokeniser/tokeniser.c:1820:        /** \todo parse error */
+./contrib/libnsgif/docs/Doxyfile:511:# The GENERATE_TODOLIST tag can be used to enable (YES) or
+./contrib/libnsgif/docs/Doxyfile:512:# disable (NO) the todo list. This list is created by putting \todo
+./contrib/libnsgif/docs/Doxyfile:515:GENERATE_TODOLIST      = YES
+./contrib/libnsgif/src/gif.c:150: * \todo Plain text and comment extensions should be implemented.
+./contrib/libnsgif/src/gif.c:271: * \todo: We don't really need to get the client to do this for us.
+./contrib/libparserutils/building/Doxyfile:341:# The GENERATE_TODOLIST tag can be used to enable (YES) or
+./contrib/libparserutils/building/Doxyfile:342:# disable (NO) the todo list. This list is created by putting \todo
+./contrib/libparserutils/building/Doxyfile:345:GENERATE_TODOLIST      = YES
+./contrib/libparserutils/docs/Todo:1:Todo list
+./contrib/libparserutils/test/cscodec-ext8.c:203:        /* \todo currently there is no way to specify the number of
+./contrib/libparserutils/test/cscodec-utf8.c:185:        /* \todo currently there is no way to specify the number of
+./contrib/libparserutils/test/cscodec-8859.c:203:        /* \todo currently there is no way to specify the number of
+./contrib/libparserutils/test/cscodec-utf16.c:245:        /* \todo currently there is no way to specify the number of
+./contrib/libcss/docs/Doxyfile:511:# The GENERATE_TODOLIST tag can be used to enable (YES) or
+./contrib/libcss/docs/Doxyfile:512:# disable (NO) the todo list. This list is created by putting \todo
+./contrib/libcss/docs/Doxyfile:515:GENERATE_TODOLIST      = YES
+./contrib/libcss/test/select.c:690:        /** \todo Fix this when we have voice-family done */
+./contrib/libcss/test/select.c:881:    /** \todo How are we going to handle @import? */
+./contrib/libcss/test/data/parse2/README:35:TODO
+./contrib/libcss/test/data/parse/README:44:TODO
+./contrib/libcss/test/parse2-auto.c:15:/** \todo at some point, we need to extend this to handle nested blocks */
+./contrib/libcss/test/dump.h:108:    /** \todo media list */
+./contrib/libcss/test/dump.h:123:    /* \todo media list */
+./contrib/libcss/test/parse-auto.c:15:/** \todo at some point, we need to extend this to handle nested blocks */
+./contrib/libcss/examples/example1.c:582:        /** \todo Fix this when we have voice-family done */
+./contrib/libcss/src/select/select.c:204:        /* TODO: is it worth cloning libcss data?  We only store
+./contrib/libcss/src/select/select.c:539:            /* TODO:
+./contrib/libcss/src/select/select.c:787:    /* TODO: no need to care about the order, but it's simpler to
+./contrib/libcss/src/select/select.c:802:        /* TODO: check hints match.  For now, just prevent sharing */
+./contrib/libcss/src/select/select.c:832:    /* TODO:
+./contrib/libcss/src/select/select.c:865:    /* TODO: move this test to caller? */
+./contrib/libcss/src/select/select.c:868:        /* TODO: Consider whether this ID exists in the ID hash tables.
+./contrib/libcss/src/select/select.c:953:    // TODO can these be null ?
+./contrib/libcss/src/select/select.c:2223:    /** \todo Some details are easier to test than others (e.g. dashmatch
+./contrib/libcss/src/select/mq.h:120:    /* TODO: Use interned string for comparison. */
+./contrib/libcss/src/select/mq.h:143:    /* TODO: Look at other feature names. */
+./contrib/libcss/src/select/computed.c:176:    // TODO can these be NULL ?
+./contrib/libcss/src/select/computed.c:299:    /* TODO:
+./contrib/libcss/src/select/computed_manual.c:85:            /** \todo Consider containing block's direction
+./contrib/libcss/src/select/computed_manual.c:146:            /** \todo Consider containing block's direction
+./contrib/libcss/src/select/properties/flex_shrink.c:32:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/pause_after.c:19:    /** \todo pause-after */
+./contrib/libcss/src/select/properties/column_count.c:34:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/pitch_range.c:19:    /** \todo pitch-range */
+./contrib/libcss/src/select/properties/font_family.c:61:            /** \todo Do this at bytecode generation time? */
+./contrib/libcss/src/select/properties/volume.c:40:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/volume.c:44:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/volume.c:55:        /** \todo volume */
+./contrib/libcss/src/select/properties/speak_numeral.c:25:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/speak_numeral.c:31:        /** \todo speak-numeral */
+./contrib/libcss/src/select/properties/voice_family.c:53:            /** \todo Do this at bytecode generation time? */
+./contrib/libcss/src/select/properties/voice_family.c:91:        /** \todo voice-family */
+./contrib/libcss/src/select/properties/speak_punctuation.c:25:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/speak_punctuation.c:31:        /** \todo speak-punctuation */
+./contrib/libcss/src/select/properties/pitch.c:35:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/pitch.c:39:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/pitch.c:50:        /** \todo pitch */
+./contrib/libcss/src/select/properties/speech_rate.c:34:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/speech_rate.c:38:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/speech_rate.c:47:        /** \todo speech-rate */
+./contrib/libcss/src/select/properties/richness.c:19:    /** \todo richness */
+./contrib/libcss/src/select/properties/order.c:32:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/pause_before.c:19:    /** \todo pause-before */
+./contrib/libcss/src/select/properties/helpers.c:74:    /** \todo lose fun != NULL once all properties have set routines */
+./contrib/libcss/src/select/properties/helpers.c:158:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/helpers.c:196:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/helpers.c:236:                sizeof(unit)); // TODO: Skip unit, not
+./contrib/libcss/src/select/properties/helpers.c:277:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/helpers.c:315:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/helpers.c:350:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/helpers.c:360:    /** \todo lose fun != NULL once all properties have set routines */
+./contrib/libcss/src/select/properties/helpers.c:374:    /** \todo values */
+./contrib/libcss/src/select/properties/helpers.c:385:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/helpers.c:393:    /** \todo lose fun != NULL once all properties have set routines */
+./contrib/libcss/src/select/properties/helpers.c:428:    /** \todo lose fun != NULL */
+./contrib/libcss/src/select/properties/helpers.c:475:    /** \todo lose fun != NULL */
+./contrib/libcss/src/select/properties/speak.c:26:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/speak.c:32:        /** \todo speak */
+./contrib/libcss/src/select/properties/line_height.c:42:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/flex_grow.c:32:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/cue_before.c:19:    /** \todo cue-before */
+./contrib/libcss/src/select/properties/azimuth.c:39:            /** \todo azimuth values */
+./contrib/libcss/src/select/properties/azimuth.c:43:        /** \todo azimuth behind */
+./contrib/libcss/src/select/properties/azimuth.c:49:        /** \todo set computed azimuth */
+./contrib/libcss/src/select/properties/cue_after.c:19:    /** \todo cue-after */
+./contrib/libcss/src/select/properties/z_index.c:35:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/stress.c:19:    /** \todo stress */
+./contrib/libcss/src/select/properties/vertical_align.c:59:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/speak_header.c:25:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/speak_header.c:31:        /** \todo speak-header */
+./contrib/libcss/src/select/properties/font_size.c:63:            advance_bytecode(style, sizeof(unit)); // TODO
+./contrib/libcss/src/select/properties/play_during.c:29:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/play_during.c:33:        /** \todo mix & repeat */
+./contrib/libcss/src/select/properties/play_during.c:37:        /** \todo play-during */
+./contrib/libcss/src/select/properties/elevation.c:36:            /** \todo convert to public values */
+./contrib/libcss/src/select/properties/elevation.c:44:        /** \todo set computed elevation */
+./contrib/libcss/src/select/font_face.c:19:        // TODO can this be NULL ?
+./contrib/libcss/src/parse/language.c:144:    // TODO can this normally be NULL ?
+./contrib/libcss/src/parse/properties/font_family.c:93:     * \todo Mozilla makes the comma optional.
+./contrib/libcss/src/parse/properties/utils.c:907:    *result = 0; /* TODO: Conversion */
+./contrib/libcss/src/parse/properties/utils.c:975:    *result = 0; /* TODO: Conversion */
+./contrib/libcss/src/parse/properties/utils.c:1046:    *result = 0; /* TODO: Conversion */
+./contrib/libcss/src/parse/properties/column_rule.c:121:        /** TODO: initial colour should be the UA-defined initial
+./contrib/libcss/src/lex/lex.c:39:/** \todo Optimisation -- we're currently revisiting a bunch of input
+./contrib/libcss/src/stylesheet.h:174:    lwc_string *encoding; /** \todo use MIB enum? */
+./contrib/libcss/src/stylesheet.c:574:    /** \todo needs to trigger some event announcing styles have changed */
+./contrib/libcss/src/stylesheet.c:956:    /** \todo this may want optimising -- counting blocks is O(n)
+./contrib/libcss/src/stylesheet.c:1376:    /** \todo validate selector */
+./contrib/libcss/src/stylesheet.c:1452:    /** \todo needs to trigger some event announcing styles have changed */
+./contrib/libcss/src/stylesheet.c:1493:    /**\ todo renumber subsequent rules? may not be necessary, as there's
+./contrib/libcss/src/stylesheet.c:1498:    /** \todo needs to trigger some event announcing styles have changed */
+./contrib/libdom/docs/Todo:1:TODO list
+./contrib/libdom/docs/Doxyfile:511:# The GENERATE_TODOLIST tag can be used to enable (YES) or
+./contrib/libdom/docs/Doxyfile:512:# disable (NO) the todo list. This list is created by putting \todo
+./contrib/libdom/docs/Doxyfile:515:GENERATE_TODOLIST      = YES
+./contrib/libdom/test/testutils/domtsasserts.c:361:     * TODO: this need to be improved, but I can't figure out how */
+./contrib/libdom/test/testcases/tests/level3/validation/getFeature01.xml:36:  <!--  TODO: Request for clarification.  The spec doesn't address case where
+./contrib/libdom/test/testcases/tests/level3/ls/LSSerializerConfig9.xml:43:  <!--  TODO: Changed in anticipation of forthcoming spec change
+./contrib/libdom/examples/dom-structure-dump.c:221:    /* TODO: Some elements don't have close tags; only print close tags for
+./contrib/libdom/bindings/xml/expat_xmlparser.c:280:    /*\todo This needs fixing.  Our system_id, if not
+./contrib/libdom/src/events/dispatch.h:22:/* Dispatch a DOMNodeInsertedIntoDocument/DOMNodeRemovedFromDocument event */
+./contrib/libdom/src/events/dispatch.c:63: * Dispatch a DOMNodeInsertedIntoDocument/DOMNodeRemovedFromDocument event
+./contrib/libdom/src/events/dispatch.c:83:        type = dom_string_ref(doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/events/dispatch.c:156: * TODO:
+./contrib/libdom/src/core/string.c:992:            /* TODO: create dom_string wrapper around existing
+./contrib/libdom/src/core/element.c:575:        /** \todo destroy schema type info */
+./contrib/libdom/src/core/element.c:946:    /** \todo ensure XML feature is supported */
+./contrib/libdom/src/core/element.c:1430:/* TODO: How to deal with default attribue:
+./contrib/libdom/src/core/element.c:1492:    /* TODO: deal with dom_type_info, it get no definition ! */
+./contrib/libdom/src/core/element.c:1566:        /* TODO: We did not support some node type such as entity
+./contrib/libdom/src/core/element.c:1710:        /* TODO: We did not support some node type such as entity
+./contrib/libdom/src/core/element.c:1728:    /** \todo defaulted attribute handling */
+./contrib/libdom/src/core/element.c:1793:    /** \todo validate name */
+./contrib/libdom/src/core/element.c:1834:        /* TODO: We did not support some node type such as entity
+./contrib/libdom/src/core/element.c:1876:    /* TODO: We did not support some node type such as entity reference, in
+./contrib/libdom/src/core/element.c:1952:    /** \todo defaulted attribute handling */
+./contrib/libdom/src/core/element.c:1988:    /* TODO: We did not support some node type such as entity reference, in
+./contrib/libdom/src/core/document.c:191:    err = dom_string_create_interned((const uint8_t *)"DOMNodeInsertedIntoDocument",
+./contrib/libdom/src/core/document.c:192:        SLEN("DOMNodeInsertedIntoDocument"), &doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/core/document.c:207:        dom_string_unref(doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/core/document.c:222:        dom_string_unref(doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/core/document.c:238:        dom_string_unref(doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/core/document.c:255:        dom_string_unref(doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/core/document.c:326:    dom_string_unref(doc->_memo_domnodeinsertedintodocument);
+./contrib/libdom/src/core/document.c:654:    /* TODO: The DOM_INVALID_CHARACTER_ERR exception */
+./contrib/libdom/src/core/attr.c:152:        /** \todo destroy schema type info */
+./contrib/libdom/src/core/attr.c:773:    /* TODO: deal with dom_type_info, it get no definition ! */
+./contrib/libdom/src/core/attr.c:782:    /* TODO: is this correct? */
+./contrib/libdom/src/core/document_type.c:110:    /* TODO: I should figure out how the namespaceURI can be got */
+./contrib/libdom/src/core/node.c:480:    /* TODO
+./contrib/libdom/src/core/node.c:841:    /** \todo Is it correct to return DocumentFragments? */
+./contrib/libdom/src/core/node.c:1097: * \todo work out what happens when cloning Document, DocumentType, Entity
+./contrib/libdom/src/core/node.c:1311:    /** \todo validate prefix */
+./contrib/libdom/src/core/node.c:1628: * TODO: in document_type, we should override this virtual function
+./contrib/libdom/src/core/node.c:1629: * TODO: actually handle DocumentType nodes differently
+./contrib/libdom/src/core/node.c:2294:    /* TODO: the pending_list is located at in dom_document, but some
+./contrib/libdom/src/core/node.c:2396:        dom_string_isequal(evt->type, doc->_memo_domnodeinsertedintodocument) ||
+./contrib/libdom/src/core/node.c:2447:        /* TODO: In the progress of parsing, many Nodes in the DTD has
+./contrib/libdom/src/core/document.h:68:    dom_string *_memo_domnodeinsertedintodocument; /**<
+./contrib/libdom/src/core/document.h:69:                              DOMNodeInsertedIntoDocument
+./contrib/libdom/src/html/html_text_area_element.c:312:    /* TODO: We don't seem to keep a ref to form element, so just
+./contrib/libdom/src/html/html_select_element.c:138:    /* TODO: We don't seem to keep a ref to form element, so just
+./contrib/libdom/src/html/html_select_element.c:415: * todo: how to deal with set the len of the children option objects?
+./contrib/libdom/src/html/html_select_element.c:641:    /** \todo Is this event (a) default (b) bubbling and (c) cancelable? */
+./contrib/libdom/src/html/html_select_element.c:658:    /** \todo Is this event (a) default (b) bubbling and (c) cancelable? */
+./contrib/libdom/src/html/html_document.c:552:        /* TODO: Should be:
+./contrib/libdom/src/html/html_document.c:610:        /* TODO: LibDOM implementation of these specialisations */
+./contrib/libdom/src/html/html_document.c:1150:    /*todo implement this after updating client interface */
+./contrib/libdom/src/html/html_document.c:1159:    /*todo implement this after updating client interface */
+./contrib/libdom/src/html/html_document.c:1167:    /*todo implement this after updating client interface */
+./contrib/libdom/src/html/html_document.c:1174:    /*todo implement this after updating client interface */
+./contrib/libdom/src/html/html_document.c:1183:    /*todo implement this after updating client interface */
+./contrib/libdom/src/html/html_document.c:1192:    /*todo implement this after _dom_html_document_write */
+./contrib/libdom/src/html/html_document.c:1202:    /*todo implement after updating core nodelist interface */
+./contrib/libdom/src/html/html_element.c:277:    /** \todo ensure XML feature is supported */
+./contrib/libdom/src/html/html_options_collection.c:109:    /* TODO: how to deal with this */
+./contrib/libdom/src/html/html_button_element.c:163:    /* TODO: We don't seem to keep a ref to form element, so just
+./contrib/libdom/src/html/html_input_element.c:252:    /** \todo Find some way to do the equiv for default_checked to be
+./contrib/libdom/src/html/html_input_element.c:312:    /* TODO: We don't seem to keep a ref to form element, so just
+./contrib/libdom/src/html/html_input_element.c:426:    /** \todo Is this event (a) default (b) bubbling and (c) cancelable? */
+./contrib/libdom/src/html/html_option_element.c:383:    /** \todo Find some way to do the equiv for default_selected to be
+./frontends/windows/drawable.c:417:         * \todo work out why the heck scroll needs scaling
+./frontends/windows/drawable.c:632:         * \todo win32 clear operation deletes the contents of
+./frontends/windows/plot.c:908:            /** TODO: Currently using top left pixel. Maybe centre
+./frontends/windows/window.c:197: * \todo This entire command handler appears superfluous.
+./frontends/windows/window.c:1068:            /* TODO: This should only redraw, not reformat.
+./frontends/windows/file.c:182:    /** @todo Need to check returning the unaltered path in this
+./frontends/windows/file.c:221:    /** @todo check if this should be url escaping the path. */
+./frontends/windows/corewindow.c:204:     * /todo win32 corewindow vertical scrolling needs us to
+./frontends/windows/corewindow.c:415:    /** /todo call setscroll apropriately */
+./frontends/windows/corewindow.c:422:    /** /todo call getscroll apropriately */
+./frontends/windows/download.c:23: * \todo The windows download functionality is very buggy this needs redoing
+./frontends/beos/window.cpp:840:        // TODO
+./frontends/beos/font.cpp:21: * TODO: check for correctness, the code is taken from the GTK one.
+./frontends/beos/gui.cpp:85:// TODO: use resources
+./frontends/beos/fetch_rsrc.cpp:99:    /* TODO: keep as nsurl to avoid copy */
+./frontends/beos/bitmap.cpp:66:#warning TODO: check rgba order
+./frontends/beos/bitmap.cpp:67:#warning TODO: add correct locking (not strictly required)
+./frontends/beos/scaffolding.cpp:591:    // TODO:FIXME: fix replicants
+./frontends/beos/scaffolding.cpp:1373:        // TODO: set bitmap
+./frontends/beos/plotters.cpp:193:        /* TODO: report an error here */
+./frontends/beos/about.cpp:56:    // TODO: i18n-ize
+./frontends/beos/Makefile.defaults:8:# TODO:HAIKU -- not sure if ~/.wisp applies in beos
+./frontends/beos/Makefile:50:# TODO: remove requires hardcoding
+./frontends/beos/cookies.cpp:222:    // Empty the domain list (TODO should we do this when hiding instead?)
+./frontends/beos/cookies.cpp:233:    // Populate the domain list - TODO USE STL VECTOR
+./frontends/beos/cookies.cpp:369:    // TODO shall we handle multiple selection here?
+./frontends/beos/cookies.cpp:372:        // TODO see if a domain is selected in the domain list, and
+./frontends/qt/scaffolding.cpp:54: * \todo cope with reverse layout
+./frontends/qt/scaffolding.cpp:184:        /* todo check page parent is actually a scaffold */
+./frontends/qt/plotters.cpp:23: * TODO: Color Management
+./frontends/qt/actions.cpp:208:        // @todo find out why qobject_cast fails (always null) here
+./frontends/qt/widget.cpp:426:        /** @todo are there any additional entries like "inspect" */
+./frontends/gtk/scaffolding.c:276: * \todo this needs to update toolbar sensitivity
+./frontends/gtk/scaffolding.c:309: * \todo toolbar sensitivity
+./frontends/gtk/scaffolding.c:371: * \todo toolbar sensitivity
+./frontends/gtk/scaffolding.c:372: * \todo next/previous tab ought to only be visible if there is such a tab
+./frontends/gtk/scaffolding.c:396: * \todo toolbar sensitivity
+./frontends/gtk/window.c:317:        /** \todo determine if hiding the caret here is necessary */
+./frontends/gtk/window.c:449:            /* @todo consider gtk_widget_get_allocated_width() */
+./frontends/gtk/window.c:466:            /* @todo consider gtk_widget_get_allocated_height */
+./frontends/gtk/window.c:505:    /* @todo consider gtk_widget_get_allocated_width() */
+./frontends/gtk/window.c:1225:    /** @todo consider gtk_widget_get_allocated_width() */
+./frontends/gtk/viewdata.c:631: * \todo The parsing of the desktop file is badly incomplete and needs
+./frontends/gtk/plotters.c:25: * \todo remove the use of the gdk structure for clipping
+./frontends/gtk/search.c:24: * \todo this whole thing should be named find rather than search as
+./frontends/gtk/gui.c:376:        /** @todo the meaning of empty is never defined so I
+./frontends/gtk/gui.c:791:        /** \todo decide if message load faliure should be fatal */
+./frontends/gtk/corewindow.c:24: * \todo should the interface really be called coredrawable?
+./frontends/gtk/resources.c:561:    /** \todo consider adding compiled inline resources for things
+./frontends/gtk/download.c:433:        /* TODO: This will be a context action (pause, start, clear) */
+./frontends/gtk/compat.c:419:    return FALSE; /** \todo add uri opening for before gtk 2.14 */
+./frontends/gtk/toolbar.c:1806: * \todo make this user selectable to switch between opening in new
+./frontends/gtk/toolbar.c:1840: * \todo this does not work well, different behaviour wanted perhaps?
+./frontends/gtk/toolbar.c:2853:    gw = tb->get_ctx; /** \todo stop assuming the context is a gui window */
+./frontends/gtk/toolbar.c:3067:    gw = tb->get_ctx; /** \todo stop assuming the context is a gui window */
+./.git/hooks/sendemail-validate.sample:22:# Replace the TODO placeholders with appropriate checks according to your
+./.git/hooks/sendemail-validate.sample:27:	# TODO: Replace with appropriate checks (e.g. spell checking).
+./.git/hooks/sendemail-validate.sample:35:	# TODO: Replace with appropriate checks for this patch
+./.git/hooks/sendemail-validate.sample:41:	# TODO: Replace with appropriate checks for the whole series
+./plans/js_migration_analysis.md:168:- No DOM exceptions thrown back to JS (marked with `/** \todo raise correct exception */`)
+./plans/js_migration_analysis.md:210:- Several `\todo` markers for proper exception throwing
+./plans/windows-ui-rework-plan.md:563:    // TODO: Update back/forward buttons based on current tab
+./plans/windows-ui-rework-plan.md:566:    // TODO: Get title from browser window
+./src/content/llcache.h:267: * \todo Make the key an enumeration, to avoid needless string comparisons
+./src/content/llcache.h:268: * \todo Forcing the client to parse the header value seems wrong.
+./src/content/llcache.h:271: * \todo Deal with multiple headers of the same key (e.g. Set-Cookie)
+./src/content/hlcache.c:136:        /** \todo This is over-zealous: all unused contents
+./src/content/fetch.c:68: * \todo The schedule timeout should be profiled to see if there is a
+./src/content/fetch.c:462:        /** \todo The fetchers setup should return nserror and that be
+./src/content/fetch.c:746:        /** \todo Long-term, this needs to be replaced with a
+./src/content/handlers/image/ico.c:256:    /* TODO: Pick best size for purpose.
+./src/content/handlers/image/ico.c:285:     * \todo Pick best size for purpose. Currently assumes
+./src/content/handlers/image/video.c:99:    /** \todo Create appsink & register with playbin */
+./src/content/handlers/image/video.c:148:    /** \todo Implement */
+./src/content/handlers/image/video.c:154:    /** \todo Implement */
+./src/content/handlers/image/video.c:160:    /** \todo Lies */
+./src/content/handlers/image/video.c:166:    /** \todo Return pointer to bitmap containing current frame, if any? */
+./src/content/handlers/text/textplain.c:841:        /* \todo make search terms visible within selected text */
+./src/content/handlers/text/textplain.c:1260:    /* \todo - implement binary search here */
+./src/content/handlers/text/textplain.c:1356:        /* \todo - it may actually be more efficient just to
+./src/content/handlers/javascript/fetcher.c:67: * \todo This is currently completely unimplemented and just returns 204
+./src/content/handlers/javascript/quickjs/location.c:393:    /* TODO: Implement actual reload */
+./src/content/handlers/javascript/quickjs/event_target.c:19:        /* TODO: Store listener for later dispatch */
+./src/content/handlers/javascript/quickjs/quickjs_bindings.c:456:    /* TODO: Implement event firing */
+./src/content/handlers/javascript/quickjs/quickjs_bindings.c:465:    /* TODO: Implement event listener registration */
+./src/content/handlers/javascript/quickjs/quickjs_bindings.c:474:    /* TODO: Implement new element handling */
+./src/content/handlers/javascript/quickjs/quickjs_bindings.c:482:    /* TODO: Implement event cleanup */
+./src/content/handlers/html/box_normalise.c:94:    /* TODO: Need to ignore cells spanning from above that belong to
+./src/content/handlers/html/redraw.c:331:        /* \todo make search terms visible within selected text */
+./src/content/handlers/html/redraw.c:2308:        // TODO remove in production
+./src/content/handlers/html/box_construct.c:378:         * TODO: Implement counter support */
+./src/content/handlers/html/box_construct.c:386:         * TODO: Implement counters support */
+./src/content/handlers/html/box_construct.c:432:         * TODO: Implement proper quote handling with nesting level */
+./src/content/handlers/html/box_construct.c:646:    /** \todo Not wise to drop const from the computed style */
+./src/content/handlers/html/box_construct.c:743:            /* TODO: Handle CSS_COMPUTED_CONTENT_URI for images */
+./src/content/handlers/html/box_construct.c:773:    /** \todo marker content (list-style-type) */
+./src/content/handlers/html/box_construct.c:807:        /* TODO: we get a url out of libcss as a lwc string, but
+./src/content/handlers/html/box_construct.c:1222:                        /* TODO: Handle URI/COUNTER/ATTR for non-inline pseudo types */
+./src/content/handlers/html/box_construct.c:1561:        /** \todo Dropping const here is not clever */
+./src/content/handlers/html/box_construct.c:1618:        /* TODO: Handle tabs properly */
+./src/content/handlers/html/box_construct.c:1666:            /** \todo Dropping const isn't clever */
+./src/content/handlers/html/box_construct.c:1799:            /** \todo Remove box_normalise_block */
+./src/content/handlers/html/imagemap.c:23: * \todo should this should use the general hashmap instead of its own
+./src/content/handlers/html/imagemap.c:142:    /* \todo Stop relying on NULL termination of dom_string */
+./src/content/handlers/html/imagemap.c:621:                ret = NSERROR_NOMEM; /** @todo check this */
+./src/content/handlers/html/imagemap.c:635:                ret = NSERROR_NOMEM; /** @todo check this */
+./src/content/handlers/html/layout_internal.h:542:                /* TODO: handle percentage */
+./src/content/handlers/html/layout_internal.h:563:                /* TODO: handle percentage */
+./src/content/handlers/html/dom_event.h:37: *   DOMNodeInsertedIntoDocument
+./src/content/handlers/html/html.c:248:        /** @todo should this call html_object_free_objects(c);
+./src/content/handlers/html/html.c:350:    /** \todo Change nsoption font sizes to px. */
+./src/content/handlers/html/html.c:1556:    /** \todo Clone HTML specifics */
+./src/content/handlers/html/html.c:1778:    /* TODO: invert order; visit deepest box first */
+./src/content/handlers/html/html.c:1823: * \todo Get rid of this crap eventually
+./src/content/handlers/html/html.c:2008:        /* TODO: Sniff for text? */
+./src/content/handlers/html/html.c:2168: * \todo This API must die, as must all use of the box tree outside of
+./src/content/handlers/html/html.c:2503:    /* \todo: move x0 in by correct idx */
+./src/content/handlers/html/html.c:2505:    /* \todo: move x1 in by correct idx */
+./src/content/handlers/html/dom_event.c:653: * callback for DOMNodeInsertedIntoDocument end type
+./src/content/handlers/html/dom_event.c:655:static void dom_default_action_DOMNodeInsertedIntoDocument_cb(struct dom_event *evt, void *pw)
+./src/content/handlers/html/dom_event.c:755:        } else if (dom_string_isequal(type, corestring_dom_DOMNodeInsertedIntoDocument)) {
+./src/content/handlers/html/dom_event.c:756:            return dom_default_action_DOMNodeInsertedIntoDocument_cb;
+./src/content/handlers/html/css.c:438:    /* TODO: only the first preferred stylesheets (ie.
+./src/content/handlers/html/css.c:670:        /* TODO: We should probably pass the sheet in anyway, and let
+./src/content/handlers/html/css.c:688:            /* TODO: Pass the sheet's full media query, instead of
+./src/content/handlers/html/layout.c:358:                /** TODO: Handle colspan="0" correctly.
+./src/content/handlers/html/layout.c:653:            /* \todo  update min width, consider fractional extra */
+./src/content/handlers/html/layout.c:681:                /** \todo handle errors */
+./src/content/handlers/html/layout.c:792:            /* TODO: handle percentage widths properly */
+./src/content/handlers/html/layout.c:823:        /* todo: handle percentage values properly */
+./src/content/handlers/html/layout.c:824:        /* todo: handle text-indent interaction with floats */
+./src/content/handlers/html/layout.c:1004:        /** \todo do we need to know the min/max width of the iframe's
+./src/content/handlers/html/layout.c:1043:                /* todo: fix for zero height tables */
+./src/content/handlers/html/layout.c:2238:    /** \todo distribute spare height over the row groups / rows / cells */
+./src/content/handlers/html/layout.c:2260:                    /* todo: baseline alignment, for now
+./src/content/handlers/html/layout.c:2929:                /** \todo handle errors */
+./src/content/handlers/html/layout.c:2950:                /** \todo handle errors */
+./src/content/handlers/html/layout.c:2987:                /** \todo handle errors */
+./src/content/handlers/html/layout.c:3005:            /* TODO: should we look at the content dimensions? */
+./src/content/handlers/html/layout.c:3107:                    /** \todo handle errors */
+./src/content/handlers/html/layout.c:3227:            /** \todo handle errors */
+./src/content/handlers/html/layout.c:3374:    /** \todo  proper vertical alignment handling */
+./src/content/handlers/html/layout.c:3456:    /** \todo fix wrapping so that a box with horizontal scrollbar will
+./src/content/handlers/html/layout.c:3815:                    /* Inline flex handled as block flex here if needed, or pass TODO */
+./src/content/handlers/html/layout.c:4144:    /** \todo
+./src/content/handlers/html/layout.c:4181:    /** \todo
+./src/content/handlers/html/layout.c:4813:        /** \todo inline ancestors */
+./src/content/handlers/html/layout.c:4828:        /* \todo  layout_table considers margins etc. again */
+./src/content/handlers/html/layout.c:4916:        /** \todo Inline ancestors */
+./src/content/handlers/html/layout.c:5114:    /**\todo ensure containing box is large enough after moving boxes */
+./src/content/handlers/html/textselection.c:148:             * \todo it should be possible to reduce the redrawn
+./src/content/handlers/html/box_special.c:696:             * TODO: really? */
+./src/content/handlers/html/box_special.c:984:         * TODO: handle hidden iframes at browser_window generation
+./src/content/handlers/html/layout_grid.c:632:     * TODO: CSS Grid spec §11.5 says fr tracks in an indefinite context
+./src/content/handlers/html/object.c:111:        /* TODO: Any other box types need mapping? */
+./src/content/handlers/html/object.c:207:            /* TODO: avoid knowledge of box internals here */
+./src/content/handlers/html/object.c:686:        /** \todo handle memory exhaustion */
+./src/content/handlers/html/interaction.c:222: * \todo Get rid of this crap eventually
+./src/content/handlers/html/interaction.c:465:    /* TODO: Set appropriate statusbar message */
+./src/content/handlers/html/interaction.c:780:            /** \todo Find a way to not ignore errors */
+./src/content/handlers/html/interaction.c:1183:        /* \todo should have a drag-saving object msg */
+./src/content/handlers/html/interaction.c:1325:    /** \todo
+./src/content/handlers/html/table.c:139:    /** \todo COL/COL_GROUP */
+./src/content/handlers/html/table.c:153:    /** \todo COL/COL_GROUP */
+./src/content/handlers/html/table.c:173:    /** \todo Currently assumes b satisifies this */
+./src/content/handlers/html/table.c:378:    /** \todo Need column and column_group, too */
+./src/content/handlers/html/table.c:446:        /** \todo can cells span row groups? */
+./src/content/handlers/html/table.c:581:    /** \todo Need column and column_group, too */
+./src/content/handlers/html/table.c:620:        /** \todo can cells span row groups? */
+./src/content/handlers/html/table.c:680:    /** \todo Can cells span row groups? */
+./src/content/handlers/html/form.c:98: * \todo Return charset used?
+./src/content/handlers/html/form.c:858:    /** \todo an improvement would be to choose an encoding
+./src/content/handlers/html/form.c:882: * \todo The chosen charset needs to be made available such that it can be
+./src/content/handlers/html/form.c:918:    /** \todo Replace this call with something DOMish */
+./src/content/handlers/html/form.c:1128:     * \todo Even though the form code is effectively part of the html
+./src/content/handlers/css/select.c:267:            /* TODO: Handle first-line and first-letter pseudo
+./src/content/handlers/css/select.c:280:            /* TODO: perhaps this shouldn't be quite so
+./src/content/handlers/css/select.c:313:    /* TODO: Do we really need to compose?  Initial style shouldn't
+./src/content/handlers/css/select.c:407:    /** \todo Assumes an HTML DOM */
+./src/content/handlers/css/select.c:655:        /** \todo Sort out reference counting */
+./src/content/handlers/css/select.c:713:    /** \todo: Ensure that libdom performs case-insensitive
+./src/content/handlers/css/select.c:741:    /** \todo Assumes an HTML DOM */
+./src/content/handlers/css/select.c:1423:    /* TODO: this duplicates what we do for box->href
+./src/content/handlers/css/select.c:1459:    /** \todo Support hovering */
+./src/content/handlers/css/select.c:1478:    /** \todo Support active nodes */
+./src/content/handlers/css/select.c:1497:    /** \todo Support focussed nodes */
+./src/content/handlers/css/select.c:1516:    /** \todo Support enabled nodes */
+./src/content/handlers/css/select.c:1535:    /** \todo Support disabled nodes */
+./src/content/handlers/css/select.c:1554:    /** \todo Support checked nodes */
+./src/content/handlers/css/select.c:1573:    /** \todo Support target */
+./src/content/handlers/css/select.c:1593:    /** \todo Support languages */
+./src/content/handlers/css/select.c:1634:        /** \todo Not exactly useful :) */
+./src/content/handlers/css/select.c:1638:        /** \todo Fix this when we have voice-family done */
+./src/content/handlers/css/css.c:151:        /** \todo libcss will take this as gospel, which is wrong */
+./src/content/handlers/css/css.c:609:    /** \todo fallback charset */
+./src/content/handlers/css/css.c:619:    /** \todo Why aren't we getting a relative url part, to join? */
+./src/content/handlers/css/css.c:626:    /** \todo Constructing nsurl for referer here is silly, avoid */
+./src/content/handlers/css/hints.c:346:    /** \todo Implement HTML5's utterly insane legacy colour parsing */
+./src/content/handlers/css/internal.c:35:    /* TODO: avoid this */
+./src/content/content.h:149:        /** \todo Consider getting screen_width, screen_height too. */
+./src/content/fetchers/about/certificate.c:389: * \todo only uses html entity as separator because netsurfs line breaking
+./src/content/fetchers/about/certificate.c:425: * \todo only uses html entity as separator because netsurfs line breaking
+./src/content/fetchers/resource.c:278:            /** \todo should this exit with an error condition? */
+./src/content/fs_backing_store.c:25: * \todo Consider improving eviction sorting to include objects size
+./src/content/fs_backing_store.c:28: * \todo Implement mmap retrieval where supported.
+./src/content/fs_backing_store.c:30: * \todo Implement static retrieval for metadata objects as their heap
+./src/content/fs_backing_store.c:274: * @todo Investigate if there is a way to have a context rather than
+./src/content/fs_backing_store.c:317:    /** \todo Do we need to do any disk cleanup here?  if so, meep! */
+./src/content/fs_backing_store.c:2106: * \todo This will cause the backing store to leak any outstanding memory
+./src/content/fs_backing_store.c:2223:        /** @todo Delete the file? */
+./src/content/fs_backing_store.c:2358:        /** @todo should this invalidate the entry? */
+./src/content/hlcache.h:114: * \todo The above rules should be encoded in the handler_map.
+./src/content/hlcache.h:116: * \todo Is there any way to sensibly reduce the number of parameters here?
+./src/content/hlcache.h:154: * \todo This may not be correct. Ideally, the client should never need to
+./src/content/urldb.c:398:                /** \todo handle fragments? */
+./src/content/urldb.c:578:            /** \todo handle fragments? */
+./src/content/urldb.c:634:     * @todo FIXME Some parts of urldb.c make confusions between hosts
+./src/content/urldb.c:1909:        /** \todo is silently truncating overlong names/values wise? */
+./src/content/urldb.c:2353:            /** \todo should we %XX-encode [;HT,SP] ? */
+./src/content/urldb.c:2354:            /** \todo Should we strip escaping backslashes? */
+./src/content/urldb.c:2891:            /* TODO: store URLs in pre-parsed state, and make
+./src/content/urldb.c:3691:            /** \todo In future, we should consult a TLD service
+./src/content/fetch.h:85:        /** \todo Use nsurl */
+./src/content/content.c:114:                /** \todo It's not clear what error this is */
+./src/content/content.c:131:        /** \todo Error page? */
+./src/content/content.c:1179:    /** \todo check if the content check should be an assert */
+./src/content/llcache.c:28: * \todo fix writeout conditions and ordering.
+./src/content/llcache.c:30: * \todo instrument and (auto)tune
+./src/content/llcache.c:167: * \todo Consider whether a list is a sane container.
+./src/content/llcache.c:175:    /** \todo We need a generic dynamic buffer object */
+./src/content/llcache.c:583:         * \todo When we get a disk cache we should
+./src/content/llcache.c:724:    /** \todo Properly parse the response line */
+./src/content/llcache.c:1674:    /** \todo really not sure this is right, nothing is allocated here? */
+./src/content/llcache.c:2257:        /** \todo 300, 305 with POST */
+./src/content/llcache.c:2452:    /** \todo If there was no WWW-Authenticate header, use response body */
+./src/content/llcache.c:2468:        /** \todo More appropriate error message */
+./src/content/llcache.c:2511:        /** \todo More appropriate error message */
+./src/content/llcache.c:2524:        /** \todo More appropriate error message */
+./src/content/llcache.c:2565:        /** \todo More appropriate error message */
+./src/content/llcache.c:2628: * \todo calculate useful cost metrics to improve sorting.
+./src/content/llcache.c:2677:    /** \todo sort list here */
+./src/content/llcache.c:2993:        /** \todo Consider using errorcode for something */
+./src/docs/building-Haiku.md:74:  TODO: add some more here.
+./src/docs/building-Haiku.md:112:  TODO
+./src/docs/using-monkey.md:477:> TODO: Check if other things are implemented and add them to the docs
+./src/docs/Doxyfile:622:# The GENERATE_TODOLIST tag can be used to enable (YES) or disable (NO) the todo
+./src/docs/Doxyfile:623:# list. This list is created by putting \todo commands in the documentation.
+./src/docs/Doxyfile:626:GENERATE_TODOLIST      = YES
+./src/test/urldbtest.c:865:    /** \todo test needs to check results */
+./src/test/urldbtest.c:882:    /** \todo test needs to check results */
+./src/test/urldbtest.c:901:    /** \todo test needs to check results */
+./src/test/urlescape.c:30: * \todo The url_escape should be tested for application/x-www-form-urlencoded
+./src/test/llcache.c:230:    /** \todo Implement */
+./src/test/monkey_driver.py:174:            assert status == "complete" or status == "loading"  # TODO: Add more status support?
+./src/utils/string.h:36: * @todo determine if squash_whitespace utf-8 safe and that it needs to be
+./src/utils/utils.h:23: * \todo Many of these functions and macros should have their own headers.
+./src/utils/useragent.c:58:        /** \todo this needs handling better */
+./src/utils/utils.c:543:        /* TODO: implement v6 address support */
+./src/utils/corestringlist.h:231:CORESTRING_DOM_STRING(DOMNodeInsertedIntoDocument);
+./src/utils/filepath.c:40:#include "utils/dirent.h" /** \todo why is this necessary for atari to get PATH_MAX and is there a better way */
+./src/utils/utf8.c:274:        /** \todo handle the various cases properly
+./src/utils/libdom.c:74:/* TODO: return appropriate errors */
+./src/utils/libdom.c:176:        /** @todo better error handling and reporting */
+./src/utils/idna.c:429:        /** \todo optionally we can check conformance to this rule */
+./src/utils/idna.c:445:        /** \todo 8. (optionally) check Bidi compliance */
+./src/utils/http/primitives.c:114:     * \todo TEXT may contain non 8859-1 chars encoded per RFC 2047
+./src/utils/http/primitives.c:115:     * \todo Support quoted-pairs
+./src/utils/nsoption.c:577:        /** @todo it would be better if the frontends actually
+./src/utils/nsoption.c:671:     * @todo is this an API bug not being a parameter
+./src/resources/FatMessages:1139:it.all.HTTP405:Metodo non permesso
+./src/desktop/browser_window.c:684:        /** @todo don't do this if the user has scrolled */
+./src/desktop/browser_window.c:707:        /** @todo don't do this if the user has scrolled */
+./src/desktop/browser_window.c:723:        /** @todo don't do this if the user has scrolled */
+./src/desktop/browser_window.c:822:         * \todo Urldb / Thumbnails / Local history brokenness
+./src/desktop/browser_window.c:890:         * \todo update browser window scrollbars before
+./src/desktop/browser_window.c:1066:     * \todo QUERY - Eventually this should fill out the form *NOT* nav
+./src/desktop/browser_window.c:1892: * \todo Remove this function, once these things are associated with content,
+./src/desktop/browser_window.c:2637:            /** \todo tell front end */
+./src/desktop/browser_window.c:2698:    /* TODO: We shouldn't have to know about specific content types
+./src/desktop/browser_window.c:2727:    /** \todo We shouldn't have to know about specific content
+./src/desktop/browser_window.c:3263:        /** \todo does this always try and download even
+./src/desktop/browser_window.c:3571:        /* TODO: should we return this? */
+./src/desktop/page-info.c:333:    /* \todo: This needs to be a helper in plot style or in nscss. */
+./src/desktop/page-info.c:391: * \todo Use messages for internationalisation.
+./src/desktop/wisp.c:62:/** \todo QUERY - Remove this import later */
+./src/desktop/global_history.c:656:        /* TODO: Set existing to window that new tab appears in */
+./src/desktop/global_history.c:661:            /* TODO: flags ^= BW_CREATE_TAB; */
+./src/desktop/font_haru.c:185:    /*TODO: this is only the right edge of the character*/
+./src/desktop/font_haru.c:236:    /*TODO: this is only the right edge of the character*/
+./src/desktop/font_haru.c:270:    /*TODO: style handling, we are mapping the
+./src/desktop/save_pdf.c:24:/* TODO
+./src/desktop/save_pdf.c:403:    /* TODO - get content from bitmap pointer */
+./src/desktop/textinput.c:77:    /** \todo intersect with bw viewport */
+./src/desktop/cookie_manager.c:25: * \todo the viewing of cookies is pretty basic and it would be good
+./src/desktop/cookie_manager.c:30: * \todo In addition to removing cookies it might be useful to allow
+./src/desktop/textarea.c:1565:            /* TODO */
+./src/desktop/textarea.c:2730:    /* TODO: redraw only the bit that changed */
+./src/desktop/local_history.h:130: * \todo the returned url should be a referenced nsurl.
+./src/desktop/scrollbar.c:702:    /** \todo some proper numbers please! */
+./src/desktop/plot_style.c:91:    .stroke_colour = 0x0000ff, /* todo - choose a proper colour */
+./src/desktop/download.c:204:            /** \todo Lose ugly cast */
+./src/desktop/treeview.c:55: * \todo get rid of REDRAW_MAX -- need to be able to know window size
+./src/desktop/treeview.c:1515:        /* TODO: don't just silently ignore */
+./src/desktop/treeview.c:1522:        /* TODO: don't just silently ignore */
+./src/desktop/treeview.c:3340:    /* TODO: Deal with redraw area properly */
+./src/desktop/treeview.c:3622:    /* TODO: Deal with redraw area properly */
+./src/desktop/hotlist.c:566:        /* TODO: Set existing to window that new tab appears in */
+./src/desktop/hotlist.c:571:            /* TODO: flags ^= BW_CREATE_TAB; */
+./src/desktop/hotlist.c:696:    /* TODO: return appropriate errors */
+./src/desktop/frames.c:817:        /* todo: the availble resize may have changed, update the drag
+./src/desktop/frames.c:830:        /* todo: the availble resize may have changed, update the drag
+./src/desktop/frames.c:944:                /* TODO: Pass appropriate rectangle to allow
+./src/CMakeLists.txt:148:	#content/handlers/image/video.c # requires gstreamer TODO: replace with ffmpeg/libmpv
+./appimage/mkappimage.sh:17:#TODO bundle libpsl, openssl
