@@ -1,0 +1,1835 @@
+diff --git a/contrib/quickjs-ng/quickjs.c b/contrib/quickjs-ng/quickjs.c
+index c9f2901f..2f2e9657 100644
+--- a/contrib/quickjs-ng/quickjs.c
++++ b/contrib/quickjs-ng/quickjs.c
+@@ -337,6 +337,7 @@ struct JSClass {
+     JSClassCall *call;
+     /* pointers for exotic behavior, can be NULL if none are present */
+     const JSClassExoticMethods *exotic;
++    size_t opaque_size;
+ };
+
+ typedef struct JSStackFrame {
+@@ -610,10 +611,8 @@ static inline uint16_t *str16(JSString *p)
+ typedef struct JSClosureVar {
+     uint8_t is_local : 1;
+     uint8_t is_arg : 1;
+-    uint8_t is_const : 1;
+-    uint8_t is_lexical : 1;
+-    uint8_t var_kind : 4; /* see JSVarKindEnum */
+-    /* 8 bits available */
++    uint8_t var_kind : 5; /* see JSVarKindEnum */
++    /* 10 bits available */
+     uint16_t var_idx; /* is_local = true: index to a normal variable of the
+                     parent function. otherwise: index to a closure
+                     variable of the parent function */
+@@ -629,20 +628,32 @@ typedef struct JSVarScope {
+ } JSVarScope;
+
+ typedef enum {
+-    /* XXX: add more variable kinds here instead of using bit fields */
+-    JS_VAR_NORMAL,
++    JS_VAR_VAR,
++    JS_VAR_LET,
++    JS_VAR_CONST,
+     JS_VAR_FUNCTION_DECL, /* lexical var with function declaration */
+     JS_VAR_NEW_FUNCTION_DECL, /* lexical var with async/generator
+                                  function declaration */
+     JS_VAR_CATCH,
+-    JS_VAR_FUNCTION_NAME, /* function expression name */
++    JS_VAR_FUNCTION_NAME_VAR,
++    JS_VAR_FUNCTION_NAME_CONST, /* function expression name */ /* function expression name */
+     JS_VAR_PRIVATE_FIELD,
+     JS_VAR_PRIVATE_METHOD,
+     JS_VAR_PRIVATE_GETTER,
+     JS_VAR_PRIVATE_SETTER, /* must come after JS_VAR_PRIVATE_GETTER */
+     JS_VAR_PRIVATE_GETTER_SETTER, /* must come after JS_VAR_PRIVATE_SETTER */
++
+ } JSVarKindEnum;
+
++static inline bool var_is_lexical(JSVarKindEnum kind) {
++    return kind != JS_VAR_VAR && kind != JS_VAR_CATCH && kind != JS_VAR_FUNCTION_NAME_VAR && kind != JS_VAR_FUNCTION_NAME_CONST;
++}
++
++static inline bool var_is_const(JSVarKindEnum kind) {
++    return kind == JS_VAR_CONST || kind == JS_VAR_FUNCTION_NAME_CONST || kind >= JS_VAR_PRIVATE_FIELD;
++}
++
++
+ /* XXX: could use a different structure in bytecode functions to save
+    memory */
+ typedef struct JSVarDef {
+@@ -658,11 +669,9 @@ typedef struct JSVarDef {
+        variable in the same or enclosing lexical scope
+     */
+     int scope_next;
+-    uint8_t is_const : 1;
+-    uint8_t is_lexical : 1;
+     uint8_t is_captured : 1;
+     uint8_t is_static_private : 1; /* only used during private class field parsing */
+-    uint8_t var_kind : 4; /* see JSVarKindEnum */
++    uint8_t var_kind : 5; /* see JSVarKindEnum */
+     /* only used during compilation: function pool index for lexical
+        variables with var_kind =
+        JS_VAR_FUNCTION_DECL/JS_VAR_NEW_FUNCTION_DECL or scope level of
+@@ -3171,17 +3180,61 @@ static const char *JS_AtomGetStrRT(JSRuntime *rt, char *buf, int buf_size, JSAto
+         snprintf(buf, buf_size, "<invalid %x>", atom);
+     } else {
+         JSAtomStruct *p = rt->atom_array[atom];
+-        *buf = '\0';
+         if (atom_is_free(p)) {
+             snprintf(buf, buf_size, "<free %x>", atom);
+         } else if (p != NULL) {
+             JSString *str = p;
+-            if (str->is_wide_char) {
+-                /* encode surrogates correctly */
+-                utf8_encode_buf16(buf, buf_size, str16(str), str->len);
++            int i, c;
++            bool is_ident;
++
++            if (str->len == 0) {
++                is_ident = false;
++            } else {
++                is_ident = true;
++                for (i = 0; i < str->len; i++) {
++                    c = str->is_wide_char ? str16(str)[i] : str8(str)[i];
++                    if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_' || c == '$') ||
++                          (c >= '0' && c <= '9' && i > 0))) {
++                        is_ident = false;
++                        break;
++                    }
++                }
++            }
++
++            if (is_ident) {
++                if (str->is_wide_char)
++                    utf8_encode_buf16(buf, buf_size, str16(str), str->len);
++                else
++                    utf8_encode_buf8(buf, buf_size, str8(str), str->len);
+             } else {
+-                utf8_encode_buf8(buf, buf_size, str8(str), str->len);
++                int out_len = 0;
++                if (out_len < buf_size - 1)
++                    buf[out_len++] = '\"';
++                for (i = 0; i < str->len; i++) {
++                    c = str->is_wide_char ? str16(str)[i] : str8(str)[i];
++                    if (c == '\"' || c == '\\') {
++                        if (out_len < buf_size - 1) buf[out_len++] = '\\';
++                        if (out_len < buf_size - 1) buf[out_len++] = c;
++                    } else if (c >= ' ' && c <= 126) {
++                        if (out_len < buf_size - 1) buf[out_len++] = c;
++                    } else if (c == '\n') {
++                        if (out_len < buf_size - 1) buf[out_len++] = '\\';
++                        if (out_len < buf_size - 1) buf[out_len++] = 'n';
++                    } else {
++                        if (out_len < buf_size - 1) buf[out_len++] = '\\';
++                        if (out_len < buf_size - 1) buf[out_len++] = 'u';
++                        if (out_len < buf_size - 1) buf[out_len++] = "0123456789abcdef"[(c >> 12) & 0xf];
++                        if (out_len < buf_size - 1) buf[out_len++] = "0123456789abcdef"[(c >> 8) & 0xf];
++                        if (out_len < buf_size - 1) buf[out_len++] = "0123456789abcdef"[(c >> 4) & 0xf];
++                        if (out_len < buf_size - 1) buf[out_len++] = "0123456789abcdef"[c & 0xf];
++                    }
++                }
++                if (out_len < buf_size - 1)
++                    buf[out_len++] = '\"';
++                buf[out_len] = '\0';
+             }
++        } else {
++            buf[0] = '\0';
+         }
+     }
+     return buf;
+@@ -3286,12 +3339,9 @@ static JSValue JS_AtomIsNumericIndex1(JSContext *ctx, JSAtom atom)
+             if (c == '0' && len == 2)
+                 goto minus_zero;
+         }
+-        /* XXX: should test NaN, but the tests do not check it */
+         if (!is_num(c)) {
+-            /* XXX: String should be normalized, therefore 8-bit only */
+-            const uint16_t nfinity16[7] = {'n', 'f', 'i', 'n', 'i', 't', 'y'};
+-            if (!(c == 'I' && (r_end - r) == 8 && !memcmp(r + 1, nfinity16, sizeof(nfinity16))))
+-                return JS_UNDEFINED;
++            /* String should be normalized, therefore 8-bit only */
++            return JS_UNDEFINED;
+         }
+     } else {
+         const uint8_t *r = str8(p), *r_end = str8(p) + len;
+@@ -3310,8 +3360,15 @@ static JSValue JS_AtomIsNumericIndex1(JSContext *ctx, JSAtom atom)
+             }
+         }
+         if (!is_num(c)) {
+-            if (!(c == 'I' && (r_end - r) == 8 && !memcmp(r + 1, "nfinity", 7)))
++            if (c == 'I' && (r_end - r) == 8 && !memcmp(r + 1, "nfinity", 7)) {
++                /* valid */
++            } else if (c == 'I' && (r_end - r) == 9 && !memcmp(r + 1, "nfinity", 7)) { /* len=9 handled because of prefix `-` */
++                /* valid */
++            } else if (c == 'N' && (r_end - r) == 3 && !memcmp(r + 1, "aN", 2)) {
++                /* valid */
++            } else {
+                 return JS_UNDEFINED;
++            }
+         }
+     }
+     /* this is ECMA CanonicalNumericIndexString primitive */
+@@ -3376,39 +3433,7 @@ static bool JS_AtomSymbolHasDescription(JSContext *ctx, JSAtom v)
+ static __maybe_unused void print_atom(JSContext *ctx, JSAtom atom)
+ {
+     char buf[ATOM_GET_STR_BUF_SIZE];
+-    const char *p;
+-    int i;
+-
+-    /* XXX: should handle embedded null characters */
+-    /* XXX: should move encoding code to JS_AtomGetStr */
+-    p = JS_AtomGetStr(ctx, buf, sizeof(buf), atom);
+-    for (i = 0; p[i]; i++) {
+-        int c = (unsigned char)p[i];
+-        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_' || c == '$') ||
+-                (c >= '0' && c <= '9' && i > 0)))
+-            break;
+-    }
+-    if (i > 0 && p[i] == '\0') {
+-        printf("%s", p);
+-    } else {
+-        putchar('"');
+-        printf("%.*s", i, p);
+-        for (; p[i]; i++) {
+-            int c = (unsigned char)p[i];
+-            if (c == '\"' || c == '\\') {
+-                putchar('\\');
+-                putchar(c);
+-            } else if (c >= ' ' && c <= 126) {
+-                putchar(c);
+-            } else if (c == '\n') {
+-                putchar('\\');
+-                putchar('n');
+-            } else {
+-                printf("\\u%04x", c);
+-            }
+-        }
+-        putchar('\"');
+-    }
++    printf("%s", JS_AtomGetStr(ctx, buf, sizeof(buf), atom));
+ }
+
+ /* free with JS_FreeCString() */
+@@ -3561,6 +3586,7 @@ static int JS_NewClass1(JSRuntime *rt, JSClassID class_id, const JSClassDef *cla
+     cl->gc_mark = class_def->gc_mark;
+     cl->call = class_def->call;
+     cl->exotic = class_def->exotic;
++    cl->opaque_size = class_def->opaque_size;
+     return 0;
+ }
+
+@@ -3999,12 +4025,14 @@ static JSValue string_buffer_end(StringBuffer *s)
+     }
+     if (s->len < s->size) {
+         /* smaller size so js_realloc should not fail, but OK if it does */
+-        /* XXX: should add some slack to avoid unnecessary calls */
++        /* If the slack is small, it isn't worth calling realloc to shrink it */
+         /* XXX: might need to use malloc+free to ensure smaller size */
+-        str = js_realloc_rt(s->ctx->rt, str, sizeof(JSString) + (s->len << s->is_wide_char) + 1 - s->is_wide_char);
+-        if (str == NULL)
+-            str = s->str;
+-        s->str = str;
++        if ((s->size - s->len) > 16) {
++            str = js_realloc_rt(s->ctx->rt, str, sizeof(JSString) + (s->len << s->is_wide_char) + 1 - s->is_wide_char);
++            if (str == NULL)
++                str = s->str;
++            s->str = str;
++        }
+     }
+     if (!s->is_wide_char)
+         str8(str)[s->len] = 0;
+@@ -4832,9 +4860,9 @@ static __maybe_unused void JS_DumpShape(JSRuntime *rt, int i, JSShape *sh)
+     char atom_buf[ATOM_GET_STR_BUF_SIZE];
+     int j;
+
+-    /* XXX: should output readable class prototype */
+-    printf("%5d %3d%c %14p %5d %5d", i, sh->header.ref_count, " *"[sh->is_hashed], (void *)sh->proto, sh->prop_size,
+-        sh->prop_count);
++    printf("%5d %3d%c %14p %10s %5d %5d", i, sh->header.ref_count, " *"[sh->is_hashed], (void *)sh->proto,
++        sh->proto ? JS_AtomGetStrRT(rt, atom_buf, sizeof(atom_buf), rt->class_array[sh->proto->class_id].class_name) : "null",
++        sh->prop_size, sh->prop_count);
+     for (j = 0; j < sh->prop_count; j++) {
+         printf(" %s", JS_AtomGetStrRT(rt, atom_buf, sizeof(atom_buf), sh->prop[j].atom));
+     }
+@@ -6437,9 +6465,10 @@ void JS_ComputeMemoryUsage(JSRuntime *rt, JSMemoryUsage *s)
+         case JS_CLASS_ASYNC_GENERATOR: /* u.async_generator_data */
+             /* TODO */
+         default:
+-            /* XXX: class definition should have an opaque block size */
+             if (p->u.opaque) {
++                JSClass *cl = &rt->class_array[p->class_id];
+                 s->memory_used_count += 1;
++                s->memory_used_size += cl->opaque_size;
+             }
+             break;
+         }
+@@ -8785,7 +8814,17 @@ static int add_fast_array_element(JSContext *ctx, JSObject *p, JSValue val, int
+ {
+     uint32_t new_len, array_len;
+     /* extend the array by one */
+-    /* XXX: convert to slow array if new_len > 2^31-1 elements */
++    if (unlikely(p->u.array.count >= 0x7fffffff)) {
++        uint32_t idx = p->u.array.count;
++        if (convert_fast_array_to_array(ctx, p)) {
++            JS_FreeValue(ctx, val);
++            return -1;
++        }
++        int ret = JS_SetPropertyValue(ctx, JS_MKPTR(JS_TAG_OBJECT, p), JS_NewInt64(ctx, idx), val, flags);
++        if (ret < 0)
++            return -1;
++        return 1;
++    }
+     new_len = p->u.array.count + 1;
+     /* update the length if necessary. We assume that if the length is
+        not an integer, then if it >= 2^31.  */
+@@ -8807,7 +8846,7 @@ static int add_fast_array_element(JSContext *ctx, JSObject *p, JSValue val, int
+     }
+     p->u.array.u.values[new_len - 1] = val;
+     p->u.array.count = new_len;
+-    return true;
++    return 1;
+ }
+
+ static void js_free_desc(JSContext *ctx, JSPropertyDescriptor *desc)
+@@ -9265,6 +9304,8 @@ static int JS_CreateProperty(
+ {
+     JSProperty *pr;
+     int ret, prop_flags;
++    bool is_array_length_update = false;
++    uint32_t new_len = 0;
+
+     /* add a new property or modify an existing exotic one */
+     if (p->is_exotic) {
+@@ -9304,10 +9345,8 @@ static int JS_CreateProperty(
+                     pslen = get_shape_prop(p->shape);
+                     if (unlikely(!(pslen->flags & JS_PROP_WRITABLE)))
+                         return JS_ThrowTypeErrorReadOnly(ctx, flags, JS_ATOM_length);
+-                    /* XXX: should update the length after defining
+-                       the property */
+-                    len = idx + 1;
+-                    set_value(ctx, &plen->u.value, js_uint32(len));
++                    is_array_length_update = true;
++                    new_len = idx + 1;
+                 }
+             }
+         } else if (is_typed_array(p->class_id)) {
+@@ -9361,6 +9400,10 @@ static int JS_CreateProperty(
+             pr->u.value = JS_UNDEFINED;
+         }
+     }
++    if (is_array_length_update) {
++        JSProperty *plen = &p->prop[0];
++        set_value(ctx, &plen->u.value, js_uint32(new_len));
++    }
+     return true;
+ }
+
+@@ -9969,15 +10012,6 @@ static int JS_GetGlobalVarRef(JSContext *ctx, JSAtom prop, JSValue *sp)
+     prs = find_own_property(&pr, p, prop);
+     if (prs) {
+         /* XXX: should handle JS_PROP_AUTOINIT properties? */
+-        /* XXX: conformance: do these tests in
+-           OP_put_var_ref/OP_get_var_ref ? */
+-        if (unlikely(JS_IsUninitialized(pr->u.value))) {
+-            JS_ThrowReferenceErrorUninitialized(ctx, prs->atom);
+-            return -1;
+-        }
+-        if (unlikely(!(prs->flags & JS_PROP_WRITABLE))) {
+-            return JS_ThrowTypeErrorReadOnly(ctx, JS_PROP_THROW, prop);
+-        }
+         sp[0] = js_dup(ctx->global_var_obj);
+     } else {
+         int ret;
+@@ -11655,15 +11689,10 @@ static JSBigInt *js_bigint_from_string(JSContext *ctx, const char *str, int radi
+             }
+         }
+     }
+-    r = js_bigint_normalize(ctx, r);
+-    /* XXX: could do it in place */
+     if (is_neg) {
+-        JSBigInt *r1;
+-        r1 = js_bigint_neg(ctx, r);
+-        js_free(ctx, r);
+-        r = r1;
++        js_mp_neg(r->tab, r->tab, r->len);
+     }
+-    return r;
++    return js_bigint_normalize(ctx, r);
+ }
+
+ /* 2 <= base <= 36 */
+@@ -17415,6 +17444,14 @@ restart:
+                 val = JS_GetPropertyValue(ctx, sp[-2], js_dup(sp[-1]));
+                 if (unlikely(JS_IsException(val)))
+                     goto exception;
++                if (unlikely(JS_IsUninitialized(val))) {
++                    JSAtom atom = JS_ValueToAtom(ctx, sp[-1]);
++                    if (atom != JS_ATOM_NULL) {
++                        JS_ThrowReferenceErrorUninitialized(ctx, atom);
++                        JS_FreeAtom(ctx, atom);
++                    }
++                    goto exception;
++                }
+                 sp[0] = val;
+                 sp++;
+             }
+@@ -17472,6 +17509,36 @@ restart:
+                     if (is_strict_mode(ctx))
+                         flags |= JS_PROP_NO_ADD;
+                 }
++
++                if (unlikely(JS_VALUE_GET_OBJ(sp[-3]) == JS_VALUE_GET_OBJ(ctx->global_var_obj))) {
++                    JSAtom atom = JS_ValueToAtom(ctx, sp[-2]);
++                    if (unlikely(atom == JS_ATOM_NULL))
++                        goto exception;
++                    JSPropertyDescriptor desc;
++                    int res = JS_GetOwnPropertyInternal(ctx, &desc, JS_VALUE_GET_OBJ(sp[-3]), atom);
++                    if (res < 0) {
++                        JS_FreeAtom(ctx, atom);
++                        goto exception;
++                    }
++                    if (res) {
++                        bool is_uninitialized = JS_IsUninitialized(desc.value);
++                        bool is_readonly = !(desc.flags & JS_PROP_WRITABLE);
++                        js_free_desc(ctx, &desc);
++
++                        if (unlikely(is_uninitialized)) {
++                            JS_ThrowReferenceErrorUninitialized(ctx, atom);
++                            JS_FreeAtom(ctx, atom);
++                            goto exception;
++                        }
++                        if (unlikely(is_readonly)) {
++                            JS_ThrowTypeErrorReadOnly(ctx, JS_PROP_THROW, atom);
++                            JS_FreeAtom(ctx, atom);
++                            goto exception;
++                        }
++                    }
++                    JS_FreeAtom(ctx, atom);
++                }
++
+                 ret = JS_SetPropertyValue(ctx, sp[-3], sp[-2], sp[-1], flags);
+                 JS_FreeValue(ctx, sp[-3]);
+                 sp -= 3;
+@@ -19416,8 +19483,7 @@ typedef struct JSGlobalVar {
+     int cpool_idx; /* if >= 0, index in the constant pool for hoisted
+                       function defintion*/
+     uint8_t force_init : 1; /* force initialization to undefined */
+-    uint8_t is_lexical : 1; /* global let/const definition */
+-    uint8_t is_const : 1; /* const definition */
++    uint8_t var_kind : 5; /* JSVarKindEnum */
+     int scope_level; /* scope of definition */
+     JSAtom var_name; /* variable name */
+ } JSGlobalVar;
+@@ -21544,7 +21610,7 @@ static JSGlobalVar *find_global_var(JSFunctionDef *fd, JSAtom name)
+ static JSGlobalVar *find_lexical_global_var(JSFunctionDef *fd, JSAtom name)
+ {
+     JSGlobalVar *hf = find_global_var(fd, name);
+-    if (hf && hf->is_lexical)
++    if (hf && var_is_lexical(hf->var_kind))
+         return hf;
+     else
+         return NULL;
+@@ -21554,7 +21620,7 @@ static int find_lexical_decl(JSContext *ctx, JSFunctionDef *fd, JSAtom name, int
+ {
+     while (scope_idx >= 0) {
+         JSVarDef *vd = &fd->vars[scope_idx];
+-        if (vd->var_name == name && (vd->is_lexical || (vd->var_kind == JS_VAR_CATCH && check_catch_var)))
++        if (vd->var_name == name && (var_is_lexical(vd->var_kind) || (vd->var_kind == JS_VAR_CATCH && check_catch_var)))
+             return scope_idx;
+         scope_idx = vd->scope_next;
+     }
+@@ -21676,9 +21742,9 @@ static int add_func_var(JSContext *ctx, JSFunctionDef *fd, JSAtom name)
+     int idx = fd->func_var_idx;
+     if (idx < 0 && (idx = add_var(ctx, fd, name)) >= 0) {
+         fd->func_var_idx = idx;
+-        fd->vars[idx].var_kind = JS_VAR_FUNCTION_NAME;
++        fd->vars[idx].var_kind = JS_VAR_FUNCTION_NAME_VAR;
+         if (fd->is_strict_mode)
+-            fd->vars[idx].is_const = true;
++            fd->vars[idx].var_kind = JS_VAR_FUNCTION_NAME_CONST;
+     }
+     return idx;
+ }
+@@ -21709,7 +21775,7 @@ static int add_arguments_arg(JSContext *ctx, JSFunctionDef *fd)
+             fd->vars[idx].scope_next = fd->scopes[ARG_SCOPE_INDEX].first;
+             fd->scopes[ARG_SCOPE_INDEX].first = idx;
+             fd->vars[idx].scope_level = ARG_SCOPE_INDEX;
+-            fd->vars[idx].is_lexical = true;
++            fd->vars[idx].var_kind = JS_VAR_LET;
+
+             fd->arguments_arg_idx = idx;
+         }
+@@ -21747,8 +21813,7 @@ static JSGlobalVar *add_global_var(JSContext *ctx, JSFunctionDef *s, JSAtom name
+     hf = &s->global_vars[s->global_var_count++];
+     hf->cpool_idx = -1;
+     hf->force_init = false;
+-    hf->is_lexical = false;
+-    hf->is_const = false;
++    hf->var_kind = JS_VAR_VAR;
+     hf->scope_level = s->scope_level;
+     hf->var_name = JS_DupAtom(ctx, name);
+     return hf;
+@@ -21772,7 +21837,7 @@ static int define_var(JSParseState *s, JSFunctionDef *fd, JSAtom name, JSVarDefE
+
+     switch (var_def_type) {
+     case JS_VAR_DEF_WITH:
+-        idx = add_scope_var(ctx, fd, name, JS_VAR_NORMAL);
++        idx = add_scope_var(ctx, fd, name, JS_VAR_VAR);
+         break;
+
+     case JS_VAR_DEF_LET:
+@@ -21825,8 +21890,7 @@ static int define_var(JSParseState *s, JSFunctionDef *fd, JSAtom name, JSVarDefE
+             hf = add_global_var(s->ctx, fd, name);
+             if (!hf)
+                 return -1;
+-            hf->is_lexical = true;
+-            hf->is_const = (var_def_type == JS_VAR_DEF_CONST);
++            hf->var_kind = (var_def_type == JS_VAR_DEF_CONST) ? JS_VAR_CONST : JS_VAR_LET;
+             idx = GLOBAL_VAR_OFFSET;
+         } else {
+             JSVarKindEnum var_kind;
+@@ -21834,14 +21898,16 @@ static int define_var(JSParseState *s, JSFunctionDef *fd, JSAtom name, JSVarDefE
+                 var_kind = JS_VAR_FUNCTION_DECL;
+             else if (var_def_type == JS_VAR_DEF_NEW_FUNCTION_DECL)
+                 var_kind = JS_VAR_NEW_FUNCTION_DECL;
++            else if (var_def_type == JS_VAR_DEF_CONST)
++                var_kind = JS_VAR_CONST;
++            else if (var_def_type == JS_VAR_DEF_LET)
++                var_kind = JS_VAR_LET;
+             else
+-                var_kind = JS_VAR_NORMAL;
++                var_kind = JS_VAR_VAR;
+             idx = add_scope_var(ctx, fd, name, var_kind);
+             if (idx >= 0) {
+                 vd = &fd->vars[idx];
+-                vd->is_lexical = 1;
+-                vd->is_const = (var_def_type == JS_VAR_DEF_CONST);
+-            }
++                            }
+         }
+         break;
+
+@@ -21858,7 +21924,7 @@ static int define_var(JSParseState *s, JSFunctionDef *fd, JSAtom name, JSVarDefE
+         if (fd->is_global_var) {
+             JSGlobalVar *hf;
+             hf = find_global_var(fd, name);
+-            if (hf && hf->is_lexical && hf->scope_level == fd->scope_level && fd->eval_type == JS_EVAL_TYPE_MODULE) {
++            if (hf && var_is_lexical(hf->var_kind) && hf->scope_level == fd->scope_level && fd->eval_type == JS_EVAL_TYPE_MODULE) {
+                 goto invalid_lexical_redefinition;
+             }
+             hf = add_global_var(s->ctx, fd, name);
+@@ -21896,9 +21962,7 @@ add_private_class_field(JSParseState *s, JSFunctionDef *fd, JSAtom name, JSVarKi
+     if (idx < 0)
+         return idx;
+     vd = &fd->vars[idx];
+-    vd->is_lexical = 1;
+-    vd->is_const = 1;
+-    vd->is_static_private = is_static;
++        vd->is_static_private = is_static;
+     return idx;
+ }
+
+@@ -27626,7 +27690,7 @@ static int js_create_module_bytecode_function(JSContext *ctx, JSModuleDef *m)
+             JSClosureVar *cv = &b->closure_var[i];
+             JSVarRef *var_ref;
+             if (cv->is_local) {
+-                var_ref = js_create_module_var(ctx, cv->is_lexical);
++                var_ref = js_create_module_var(ctx, var_is_lexical(cv->var_kind));
+                 if (!var_ref)
+                     goto fail;
+
+@@ -28740,7 +28804,7 @@ static __exception int js_parse_export(JSParseState *s)
+ }
+
+ static int add_closure_var(JSContext *ctx, JSFunctionDef *s, bool is_local, bool is_arg, int var_idx, JSAtom var_name,
+-    bool is_const, bool is_lexical, JSVarKindEnum var_kind);
++                               JSVarKindEnum var_kind);
+
+ static int add_import(JSParseState *s, JSModuleDef *m, JSAtom local_name, JSAtom import_name)
+ {
+@@ -28761,7 +28825,7 @@ static int add_import(JSParseState *s, JSModuleDef *m, JSAtom local_name, JSAtom
+
+     is_local = (import_name == JS_ATOM__star_);
+     var_idx = add_closure_var(
+-        ctx, s->cur_func, is_local, false, m->import_entries_count, local_name, true, true, JS_VAR_NORMAL);
++        ctx, s->cur_func, is_local, false, m->import_entries_count, local_name, JS_VAR_CONST);
+     if (var_idx < 0)
+         return -1;
+     if (js_resize_array(ctx, (void **)&m->import_entries, sizeof(JSImportEntry), &m->import_entries_size,
+@@ -29480,8 +29544,8 @@ static __maybe_unused void js_dump_function_bytecode(JSContext *ctx, JSFunctionB
+             printf("%5d: %s %s", i,
+                 vd->var_kind == JS_VAR_CATCH                                                             ? "catch"
+                     : (vd->var_kind == JS_VAR_FUNCTION_DECL || vd->var_kind == JS_VAR_NEW_FUNCTION_DECL) ? "function"
+-                    : vd->is_const                                                                       ? "const"
+-                    : vd->is_lexical                                                                     ? "let"
++                    : var_is_const(vd->var_kind)                                                                       ? "const"
++                    : var_is_lexical(vd->var_kind)                                                                     ? "let"
+                                                                                                          : "var",
+                 JS_AtomGetStr(ctx, atom_buf, sizeof(atom_buf), vd->var_name));
+             if (vd->scope_level)
+@@ -29495,8 +29559,8 @@ static __maybe_unused void js_dump_function_bytecode(JSContext *ctx, JSFunctionB
+             JSClosureVar *cv = &b->closure_var[i];
+             printf("%5d: %s %s:%s%d %s\n", i, JS_AtomGetStr(ctx, atom_buf, sizeof(atom_buf), cv->var_name),
+                 cv->is_local ? "local" : "parent", cv->is_arg ? "arg" : "loc", cv->var_idx,
+-                cv->is_const         ? "const"
+-                    : cv->is_lexical ? "let"
++                var_is_const(cv->var_kind)         ? "const"
++                    : var_is_lexical(cv->var_kind) ? "let"
+                                      : "var");
+         }
+     }
+@@ -29520,7 +29584,7 @@ static __maybe_unused void js_dump_function_bytecode(JSContext *ctx, JSFunctionB
+ #ifndef QJS_DISABLE_PARSER
+
+ static int add_closure_var(JSContext *ctx, JSFunctionDef *s, bool is_local, bool is_arg, int var_idx, JSAtom var_name,
+-    bool is_const, bool is_lexical, JSVarKindEnum var_kind)
++                               JSVarKindEnum var_kind)
+ {
+     JSClosureVar *cv;
+
+@@ -29537,8 +29601,8 @@ static int add_closure_var(JSContext *ctx, JSFunctionDef *s, bool is_local, bool
+     cv = &s->closure_var[s->closure_var_count++];
+     cv->is_local = is_local;
+     cv->is_arg = is_arg;
+-    cv->is_const = is_const;
+-    cv->is_lexical = is_lexical;
++
++
+     cv->var_kind = var_kind;
+     cv->var_idx = var_idx;
+     cv->var_name = JS_DupAtom(ctx, var_name);
+@@ -29560,13 +29624,12 @@ static int find_closure_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name)
+    local variable (is_local = true) or a closure (is_local = false) in
+    'fd' */
+ static int get_closure_var2(JSContext *ctx, JSFunctionDef *s, JSFunctionDef *fd, bool is_local, bool is_arg,
+-    int var_idx, JSAtom var_name, bool is_const, bool is_lexical, JSVarKindEnum var_kind)
++                                int var_idx, JSAtom var_name, JSVarKindEnum var_kind)
+ {
+     int i;
+
+     if (fd != s->parent) {
+-        var_idx = get_closure_var2(
+-            ctx, s->parent, fd, is_local, is_arg, var_idx, var_name, is_const, is_lexical, var_kind);
++        var_idx = get_closure_var2(ctx, s->parent, fd, is_local, is_arg, var_idx, var_name, var_kind);
+         if (var_idx < 0)
+             return -1;
+         is_local = false;
+@@ -29576,13 +29639,13 @@ static int get_closure_var2(JSContext *ctx, JSFunctionDef *s, JSFunctionDef *fd,
+         if (cv->var_idx == var_idx && cv->is_arg == is_arg && cv->is_local == is_local)
+             return i;
+     }
+-    return add_closure_var(ctx, s, is_local, is_arg, var_idx, var_name, is_const, is_lexical, var_kind);
++    return add_closure_var(ctx, s, is_local, is_arg, var_idx, var_name, var_kind);
+ }
+
+ static int get_closure_var(JSContext *ctx, JSFunctionDef *s, JSFunctionDef *fd, bool is_arg, int var_idx,
+-    JSAtom var_name, bool is_const, bool is_lexical, JSVarKindEnum var_kind)
++                               JSAtom var_name, JSVarKindEnum var_kind)
+ {
+-    return get_closure_var2(ctx, s, fd, true, is_arg, var_idx, var_name, is_const, is_lexical, var_kind);
++    return get_closure_var2(ctx, s, fd, true, is_arg, var_idx, var_name, var_kind);
+ }
+
+ static int get_with_scope_opcode(int op)
+@@ -29722,7 +29785,7 @@ static int add_var_this(JSContext *ctx, JSFunctionDef *fd)
+     if (idx >= 0 && fd->is_derived_class_constructor) {
+         JSVarDef *vd = &fd->vars[idx];
+         /* XXX: should have is_this flag or var type */
+-        vd->is_lexical = 1; /* used to trigger 'uninitialized' checks
++        vd->var_kind = JS_VAR_LET; /* used to trigger 'uninitialized' checks
+                                in a derived class constructor */
+     }
+     return idx;
+@@ -29809,7 +29872,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+         vd = &s->vars[idx];
+         if (vd->var_name == var_name) {
+             if (op == OP_scope_put_var || op == OP_scope_make_ref) {
+-                if (vd->is_const) {
++                if (var_is_const(vd->var_kind)) {
+                     dbuf_putc(bc, OP_throw_error);
+                     dbuf_put_u32(bc, JS_DupAtom(ctx, var_name));
+                     dbuf_putc(bc, JS_THROW_VAR_RO);
+@@ -29847,7 +29910,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+     }
+     if (var_idx >= 0) {
+         if ((op == OP_scope_put_var || op == OP_scope_make_ref) && !(var_idx & ARGUMENT_VAR_OFFSET) &&
+-            s->vars[var_idx].is_const) {
++            var_is_const(s->vars[var_idx].var_kind)) {
+             /* only happens when assigning a function expression name
+                in strict mode */
+             dbuf_putc(bc, OP_throw_error);
+@@ -29860,7 +29923,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+            can be used with a closure (module global variable case). */
+         switch (op) {
+         case OP_scope_make_ref:
+-            if (!(var_idx & ARGUMENT_VAR_OFFSET) && s->vars[var_idx].var_kind == JS_VAR_FUNCTION_NAME) {
++            if (!(var_idx & ARGUMENT_VAR_OFFSET) && (s->vars[var_idx].var_kind == JS_VAR_FUNCTION_NAME_VAR || s->vars[var_idx].var_kind == JS_VAR_FUNCTION_NAME_CONST)) {
+                 /* Create a dummy object reference for the func_var */
+                 dbuf_putc(bc, OP_object);
+                 dbuf_putc(bc, OP_get_loc);
+@@ -29875,7 +29938,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                     get_op = OP_get_arg;
+                     var_idx -= ARGUMENT_VAR_OFFSET;
+                 } else {
+-                    if (s->vars[var_idx].is_lexical)
++                    if (var_is_lexical(s->vars[var_idx].var_kind))
+                         get_op = OP_get_loc_check;
+                     else
+                         get_op = OP_get_loc;
+@@ -29908,7 +29971,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                 dbuf_put_u16(bc, var_idx - ARGUMENT_VAR_OFFSET);
+             } else {
+                 if (is_put) {
+-                    if (s->vars[var_idx].is_lexical) {
++                    if (var_is_lexical(s->vars[var_idx].var_kind)) {
+                         if (op == OP_scope_put_var_init) {
+                             /* 'this' can only be initialized once */
+                             if (var_name == JS_ATOM_this)
+@@ -29922,7 +29985,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                         dbuf_putc(bc, OP_put_loc);
+                     }
+                 } else {
+-                    if (s->vars[var_idx].is_lexical) {
++                    if (var_is_lexical(s->vars[var_idx].var_kind)) {
+                         dbuf_putc(bc, OP_get_loc_check);
+                     } else {
+                         dbuf_putc(bc, OP_get_loc);
+@@ -29958,7 +30021,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+             vd = &fd->vars[idx];
+             if (vd->var_name == var_name) {
+                 if (op == OP_scope_put_var || op == OP_scope_make_ref) {
+-                    if (vd->is_const) {
++                    if (var_is_const(vd->var_kind)) {
+                         dbuf_putc(bc, OP_throw_error);
+                         dbuf_put_u32(bc, JS_DupAtom(ctx, var_name));
+                         dbuf_putc(bc, JS_THROW_VAR_RO);
+@@ -29969,7 +30032,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                 break;
+             } else if (vd->var_name == JS_ATOM__with_ && !is_pseudo_var) {
+                 vd->is_captured = 1;
+-                idx = get_closure_var(ctx, s, fd, false, idx, vd->var_name, false, false, JS_VAR_NORMAL);
++                idx = get_closure_var(ctx, s, fd, false, idx, vd->var_name, JS_VAR_VAR);
+                 if (idx >= 0) {
+                     dbuf_putc(bc, OP_get_var_ref);
+                     dbuf_put_u16(bc, idx);
+@@ -30006,7 +30069,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+         if (!is_arg_scope && fd->var_object_idx >= 0 && !is_pseudo_var) {
+             vd = &fd->vars[fd->var_object_idx];
+             vd->is_captured = 1;
+-            idx = get_closure_var(ctx, s, fd, false, fd->var_object_idx, vd->var_name, false, false, JS_VAR_NORMAL);
++            idx = get_closure_var(ctx, s, fd, false, fd->var_object_idx, vd->var_name, JS_VAR_VAR);
+             dbuf_putc(bc, OP_get_var_ref);
+             dbuf_put_u16(bc, idx);
+             var_object_test(ctx, s, var_name, op, bc, &label_done, 0);
+@@ -30016,7 +30079,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+         if (fd->arg_var_object_idx >= 0 && !is_pseudo_var) {
+             vd = &fd->vars[fd->arg_var_object_idx];
+             vd->is_captured = 1;
+-            idx = get_closure_var(ctx, s, fd, false, fd->arg_var_object_idx, vd->var_name, false, false, JS_VAR_NORMAL);
++            idx = get_closure_var(ctx, s, fd, false, fd->arg_var_object_idx, vd->var_name, JS_VAR_VAR);
+             dbuf_putc(bc, OP_get_var_ref);
+             dbuf_put_u16(bc, idx);
+             var_object_test(ctx, s, var_name, op, bc, &label_done, 0);
+@@ -30036,8 +30099,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+             JSClosureVar *cv = &fd->closure_var[idx1];
+             if (var_name == cv->var_name) {
+                 if (fd != s) {
+-                    idx = get_closure_var2(
+-                        ctx, s, fd, false, cv->is_arg, idx1, cv->var_name, cv->is_const, cv->is_lexical, cv->var_kind);
++                    idx = get_closure_var2(ctx, s, fd, false, cv->is_arg, idx1, cv->var_name, cv->var_kind);
+                 } else {
+                     idx = idx1;
+                 }
+@@ -30048,7 +30110,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                 int is_with = (cv->var_name == JS_ATOM__with_);
+                 if (fd != s) {
+                     idx = get_closure_var2(
+-                        ctx, s, fd, false, cv->is_arg, idx1, cv->var_name, false, false, JS_VAR_NORMAL);
++                        ctx, s, fd, false, cv->is_arg, idx1, cv->var_name, JS_VAR_VAR);
+                 } else {
+                     idx = idx1;
+                 }
+@@ -30064,15 +30126,14 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+         if (var_idx & ARGUMENT_VAR_OFFSET) {
+             fd->args[var_idx - ARGUMENT_VAR_OFFSET].is_captured = 1;
+             idx = get_closure_var(
+-                ctx, s, fd, true, var_idx - ARGUMENT_VAR_OFFSET, var_name, false, false, JS_VAR_NORMAL);
++                ctx, s, fd, true, var_idx - ARGUMENT_VAR_OFFSET, var_name, JS_VAR_VAR);
+         } else {
+             fd->vars[var_idx].is_captured = 1;
+-            idx = get_closure_var(ctx, s, fd, false, var_idx, var_name, fd->vars[var_idx].is_const,
+-                fd->vars[var_idx].is_lexical, fd->vars[var_idx].var_kind);
++            idx = get_closure_var(ctx, s, fd, false, var_idx, var_name, fd->vars[var_idx].var_kind);
+         }
+         if (idx >= 0) {
+         has_idx:
+-            if ((op == OP_scope_put_var || op == OP_scope_make_ref) && s->closure_var[idx].is_const) {
++            if ((op == OP_scope_put_var || op == OP_scope_make_ref) && var_is_const(s->closure_var[idx].var_kind)) {
+                 dbuf_putc(bc, OP_throw_error);
+                 dbuf_put_u32(bc, JS_DupAtom(ctx, var_name));
+                 dbuf_putc(bc, JS_THROW_VAR_RO);
+@@ -30080,7 +30141,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+             }
+             switch (op) {
+             case OP_scope_make_ref:
+-                if (s->closure_var[idx].var_kind == JS_VAR_FUNCTION_NAME) {
++                if (s->closure_var[idx].var_kind == JS_VAR_FUNCTION_NAME_VAR) {
+                     /* Create a dummy object reference for the func_var */
+                     dbuf_putc(bc, OP_object);
+                     dbuf_putc(bc, OP_get_var_ref);
+@@ -30091,7 +30152,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                     dbuf_put_u32(bc, JS_DupAtom(ctx, var_name));
+                 } else if (label_done == -1 && can_opt_put_ref_value(bc_buf, ls->pos)) {
+                     int get_op;
+-                    if (s->closure_var[idx].is_lexical)
++                    if (var_is_lexical(s->closure_var[idx].var_kind))
+                         get_op = OP_get_var_ref_check;
+                     else
+                         get_op = OP_get_var_ref;
+@@ -30115,7 +30176,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+             case OP_scope_put_var_init:
+                 is_put = (op == OP_scope_put_var || op == OP_scope_put_var_init);
+                 if (is_put) {
+-                    if (s->closure_var[idx].is_lexical) {
++                    if (var_is_lexical(s->closure_var[idx].var_kind)) {
+                         if (op == OP_scope_put_var_init) {
+                             /* 'this' can only be initialized once */
+                             if (var_name == JS_ATOM_this)
+@@ -30129,7 +30190,7 @@ static int resolve_scope_var(JSContext *ctx, JSFunctionDef *s, JSAtom var_name,
+                         dbuf_putc(bc, OP_put_var_ref);
+                     }
+                 } else {
+-                    if (s->closure_var[idx].is_lexical) {
++                    if (var_is_lexical(s->closure_var[idx].var_kind)) {
+                         dbuf_putc(bc, OP_get_var_ref_check);
+                     } else {
+                         dbuf_putc(bc, OP_get_var_ref);
+@@ -30226,7 +30287,7 @@ static int resolve_scope_private_field1(
+         if (idx >= 0) {
+             var_kind = fd->vars[idx].var_kind;
+             if (is_ref) {
+-                idx = get_closure_var(ctx, s, fd, false, idx, var_name, true, true, JS_VAR_NORMAL);
++                idx = get_closure_var(ctx, s, fd, false, idx, var_name, JS_VAR_CONST);
+                 if (idx < 0)
+                     return -1;
+             }
+@@ -30242,8 +30303,7 @@ static int resolve_scope_private_field1(
+                         var_kind = cv->var_kind;
+                         is_ref = true;
+                         if (fd != s) {
+-                            idx = get_closure_var2(ctx, s, fd, false, cv->is_arg, idx, cv->var_name, cv->is_const,
+-                                cv->is_lexical, cv->var_kind);
++                            idx = get_closure_var2(ctx, s, fd, false, cv->is_arg, idx, cv->var_name, cv->var_kind);
+                             if (idx < 0)
+                                 return -1;
+                         }
+@@ -30276,7 +30336,7 @@ resolve_scope_private_field(JSContext *ctx, JSFunctionDef *s, JSAtom var_name, i
+     idx = resolve_scope_private_field1(ctx, &is_ref, &var_kind, s, var_name, scope_level);
+     if (idx < 0)
+         return -1;
+-    assert(var_kind != JS_VAR_NORMAL);
++    assert(var_kind != JS_VAR_VAR);
+     switch (op) {
+     case OP_scope_get_private_field:
+     case OP_scope_get_private_field2:
+@@ -30374,11 +30434,11 @@ static void mark_eval_captured_variables(JSContext *ctx, JSFunctionDef *s, int s
+ }
+
+ /* XXX: should handle the argument scope generically */
+-static bool is_var_in_arg_scope(const JSVarDef *vd)
++static bool is_var_in_arg_scope(JSFunctionDef *fd, const JSVarDef *vd)
+ {
+     return (vd->var_name == JS_ATOM_home_object || vd->var_name == JS_ATOM_this_active_func ||
+         vd->var_name == JS_ATOM_new_target || vd->var_name == JS_ATOM_this || vd->var_name == JS_ATOM__arg_var_ ||
+-        vd->var_kind == JS_VAR_FUNCTION_NAME);
++        vd->var_kind == JS_VAR_FUNCTION_NAME_VAR || vd->var_kind == JS_VAR_FUNCTION_NAME_CONST);
+ }
+
+ static void add_eval_variables(JSContext *ctx, JSFunctionDef *s)
+@@ -30462,7 +30522,7 @@ static void add_eval_variables(JSContext *ctx, JSFunctionDef *s)
+         while (scope_idx >= 0) {
+             vd = &fd->vars[scope_idx];
+             vd->is_captured = 1;
+-            get_closure_var(ctx, s, fd, false, scope_idx, vd->var_name, vd->is_const, vd->is_lexical, vd->var_kind);
++            get_closure_var(ctx, s, fd, false, scope_idx, vd->var_name, vd->var_kind);
+             scope_idx = vd->scope_next;
+         }
+         is_arg_scope = (scope_idx == ARG_SCOPE_END);
+@@ -30472,22 +30532,22 @@ static void add_eval_variables(JSContext *ctx, JSFunctionDef *s)
+             for (i = 0; i < fd->arg_count; i++) {
+                 vd = &fd->args[i];
+                 if (vd->var_name != JS_ATOM_NULL) {
+-                    get_closure_var(ctx, s, fd, true, i, vd->var_name, false, vd->is_lexical, JS_VAR_NORMAL);
++                    get_closure_var(ctx, s, fd, true, i, vd->var_name, var_is_lexical(vd->var_kind) ? JS_VAR_LET : JS_VAR_VAR);
+                 }
+             }
+             for (i = 0; i < fd->var_count; i++) {
+                 vd = &fd->vars[i];
+                 /* do not close top level last result */
+                 if (vd->scope_level == 0 && vd->var_name != JS_ATOM__ret_ && vd->var_name != JS_ATOM_NULL) {
+-                    get_closure_var(ctx, s, fd, false, i, vd->var_name, false, vd->is_lexical, JS_VAR_NORMAL);
++                    get_closure_var(ctx, s, fd, false, i, vd->var_name, var_is_lexical(vd->var_kind) ? JS_VAR_LET : JS_VAR_VAR);
+                 }
+             }
+         } else {
+             for (i = 0; i < fd->var_count; i++) {
+                 vd = &fd->vars[i];
+                 /* do not close top level last result */
+-                if (vd->scope_level == 0 && is_var_in_arg_scope(vd)) {
+-                    get_closure_var(ctx, s, fd, false, i, vd->var_name, false, vd->is_lexical, JS_VAR_NORMAL);
++                if (vd->scope_level == 0 && is_var_in_arg_scope(s, vd)) {
++                    get_closure_var(ctx, s, fd, false, i, vd->var_name, var_is_lexical(vd->var_kind) ? JS_VAR_LET : JS_VAR_VAR);
+                 }
+             }
+         }
+@@ -30497,8 +30557,7 @@ static void add_eval_variables(JSContext *ctx, JSFunctionDef *s)
+                top level) */
+             for (idx = 0; idx < fd->closure_var_count; idx++) {
+                 JSClosureVar *cv = &fd->closure_var[idx];
+-                get_closure_var2(
+-                    ctx, s, fd, false, cv->is_arg, idx, cv->var_name, cv->is_const, cv->is_lexical, cv->var_kind);
++                get_closure_var2(ctx, s, fd, false, cv->is_arg, idx, cv->var_name, cv->var_kind);
+             }
+         }
+     }
+@@ -30508,8 +30567,8 @@ static void set_closure_from_var(JSContext *ctx, JSClosureVar *cv, JSVarDef *vd,
+ {
+     cv->is_local = true;
+     cv->is_arg = false;
+-    cv->is_const = vd->is_const;
+-    cv->is_lexical = vd->is_lexical;
++
++
+     cv->var_kind = vd->var_kind;
+     cv->var_idx = var_idx;
+     cv->var_name = JS_DupAtom(ctx, vd->var_name);
+@@ -30549,9 +30608,7 @@ static __exception int add_closure_variables(JSContext *ctx, JSFunctionDef *s, J
+             vd = &b->vardefs[i];
+             cv->is_local = true;
+             cv->is_arg = true;
+-            cv->is_const = false;
+-            cv->is_lexical = false;
+-            cv->var_kind = JS_VAR_NORMAL;
++            cv->var_kind = JS_VAR_VAR;
+             cv->var_idx = i;
+             cv->var_name = JS_DupAtom(ctx, vd->var_name);
+         }
+@@ -30567,7 +30624,7 @@ static __exception int add_closure_variables(JSContext *ctx, JSFunctionDef *s, J
+         /* only add pseudo variables */
+         for (i = 0; i < b->var_count; i++) {
+             vd = &b->vardefs[b->arg_count + i];
+-            if (vd->scope_level == 0 && is_var_in_arg_scope(vd)) {
++            if (vd->scope_level == 0 && is_var_in_arg_scope(s, vd)) {
+                 JSClosureVar *cv = &s->closure_var[s->closure_var_count++];
+                 set_closure_from_var(ctx, cv, vd, i);
+             }
+@@ -30578,8 +30635,6 @@ static __exception int add_closure_variables(JSContext *ctx, JSFunctionDef *s, J
+         JSClosureVar *cv = &s->closure_var[s->closure_var_count++];
+         cv->is_local = false;
+         cv->is_arg = cv0->is_arg;
+-        cv->is_const = cv0->is_const;
+-        cv->is_lexical = cv0->is_lexical;
+         cv->var_kind = cv0->var_kind;
+         cv->var_idx = i;
+         cv->var_name = JS_DupAtom(ctx, cv0->var_name);
+@@ -30795,7 +30850,7 @@ static void instantiate_hoisted_definitions(JSContext *ctx, JSFunctionDef *s, Dy
+             flags = 0;
+             if (s->eval_type != JS_EVAL_TYPE_GLOBAL)
+                 flags |= JS_PROP_CONFIGURABLE;
+-            if (hf->cpool_idx >= 0 && !hf->is_lexical) {
++            if (hf->cpool_idx >= 0 && !var_is_lexical(hf->var_kind)) {
+                 /* global function definitions need a specific handling */
+                 dbuf_putc(bc, OP_fclosure);
+                 dbuf_put_u32(bc, hf->cpool_idx);
+@@ -30806,9 +30861,9 @@ static void instantiate_hoisted_definitions(JSContext *ctx, JSFunctionDef *s, Dy
+
+                 goto done_global_var;
+             } else {
+-                if (hf->is_lexical) {
++                if (var_is_lexical(hf->var_kind)) {
+                     flags |= DEFINE_GLOBAL_LEX_VAR;
+-                    if (!hf->is_const)
++                    if (!var_is_const(hf->var_kind))
+                         flags |= JS_PROP_WRITABLE;
+                 }
+                 dbuf_putc(bc, OP_define_var);
+@@ -30952,7 +31007,7 @@ static __exception int resolve_variables(JSContext *ctx, JSFunctionDef *s)
+         for (idx = 0; idx < s->closure_var_count; idx++) {
+             JSClosureVar *cv = &s->closure_var[idx];
+             if (cv->var_name == hf->var_name) {
+-                if (s->eval_type == JS_EVAL_TYPE_DIRECT && cv->is_lexical) {
++                if (s->eval_type == JS_EVAL_TYPE_DIRECT && var_is_lexical(cv->var_kind)) {
+                     /* Check if a lexical variable is
+                        redefined as 'var'. XXX: Could abort
+                        compilation here, but for consistency
+@@ -30971,7 +31026,7 @@ static __exception int resolve_variables(JSContext *ctx, JSFunctionDef *s)
+         dbuf_putc(&bc_out, OP_check_define_var);
+         dbuf_put_u32(&bc_out, JS_DupAtom(ctx, hf->var_name));
+         flags = 0;
+-        if (hf->is_lexical)
++        if (var_is_lexical(hf->var_kind))
+             flags |= DEFINE_GLOBAL_LEX_VAR;
+         if (hf->cpool_idx >= 0)
+             flags |= DEFINE_GLOBAL_FUNC_VAR;
+@@ -32697,7 +32752,7 @@ static int add_module_variables(JSContext *ctx, JSFunctionDef *fd)
+
+     for (i = 0; i < fd->global_var_count; i++) {
+         hf = &fd->global_vars[i];
+-        if (add_closure_var(ctx, fd, true, false, i, hf->var_name, hf->is_const, hf->is_lexical, JS_VAR_NORMAL) < 0)
++        if (add_closure_var(ctx, fd, true, false, i, hf->var_name, hf->var_kind) < 0)
+             return -1;
+     }
+
+@@ -34469,9 +34524,8 @@ static int JS_WriteFunctionTag(BCWriterState *s, JSValueConst obj)
+             bc_put_leb128(s, vd->scope_level);
+             bc_put_leb128(s, vd->scope_next + 1);
+             flags = idx = 0;
+-            bc_set_flags(&flags, &idx, vd->var_kind, 4);
+-            bc_set_flags(&flags, &idx, vd->is_const, 1);
+-            bc_set_flags(&flags, &idx, vd->is_lexical, 1);
++            bc_set_flags(&flags, &idx, vd->var_kind, 5);
++
+             bc_set_flags(&flags, &idx, vd->is_captured, 1);
+             assert(idx <= 8);
+             bc_put_u8(s, flags);
+@@ -34487,9 +34541,7 @@ static int JS_WriteFunctionTag(BCWriterState *s, JSValueConst obj)
+         flags = idx = 0;
+         bc_set_flags(&flags, &idx, cv->is_local, 1);
+         bc_set_flags(&flags, &idx, cv->is_arg, 1);
+-        bc_set_flags(&flags, &idx, cv->is_const, 1);
+-        bc_set_flags(&flags, &idx, cv->is_lexical, 1);
+-        bc_set_flags(&flags, &idx, cv->var_kind, 4);
++        bc_set_flags(&flags, &idx, cv->var_kind, 5);
+         assert(idx <= 8);
+         bc_put_u8(s, flags);
+     }
+@@ -35450,14 +35502,12 @@ static JSValue JS_ReadFunctionTag(BCReaderState *s)
+             if (bc_get_u8(s, &v8))
+                 goto fail;
+             idx = 0;
+-            vd->var_kind = bc_get_flags(v8, &idx, 4);
+-            vd->is_const = bc_get_flags(v8, &idx, 1);
+-            vd->is_lexical = bc_get_flags(v8, &idx, 1);
++            vd->var_kind = bc_get_flags(v8, &idx, 5);
+             vd->is_captured = bc_get_flags(v8, &idx, 1);
+ #ifdef ENABLE_DUMPS // JS_DUMP_READ_OBJECT
+             if (check_dump_flag(s->ctx->rt, JS_DUMP_READ_OBJECT)) {
+-                bc_read_trace(s, "%3d  %d%c%c%c %4d  ", i, vd->var_kind, vd->is_const ? 'C' : '.',
+-                    vd->is_lexical ? 'L' : '.', vd->is_captured ? 'X' : '.', vd->scope_level);
++                bc_read_trace(s, "%3d  %d%c%c%c %4d  ", i, vd->var_kind, var_is_const(vd->var_kind) ? 'C' : '.',
++                    var_is_lexical(vd->var_kind) ? 'L' : '.', vd->is_captured ? 'X' : '.', vd->scope_level);
+                 print_atom(s->ctx, vd->var_name);
+                 printf("\n");
+             }
+@@ -35481,13 +35531,11 @@ static JSValue JS_ReadFunctionTag(BCReaderState *s)
+             idx = 0;
+             cv->is_local = bc_get_flags(v8, &idx, 1);
+             cv->is_arg = bc_get_flags(v8, &idx, 1);
+-            cv->is_const = bc_get_flags(v8, &idx, 1);
+-            cv->is_lexical = bc_get_flags(v8, &idx, 1);
+-            cv->var_kind = bc_get_flags(v8, &idx, 4);
++            cv->var_kind = bc_get_flags(v8, &idx, 5);
+ #ifdef ENABLE_DUMPS // JS_DUMP_READ_OBJECT
+             if (check_dump_flag(s->ctx->rt, JS_DUMP_READ_OBJECT)) {
+                 bc_read_trace(s, "%3d  %d%c%c%c%c %3d  ", i, cv->var_kind, cv->is_local ? 'L' : '.',
+-                    cv->is_arg ? 'A' : '.', cv->is_const ? 'C' : '.', cv->is_lexical ? 'X' : '.', cv->var_idx);
++                    cv->is_arg ? 'A' : '.', var_is_const(cv->var_kind) ? 'C' : '.', var_is_lexical(cv->var_kind) ? 'X' : '.', cv->var_idx);
+                 print_atom(s->ctx, cv->var_name);
+                 printf("\n");
+             }
+diff --git a/src/content/handlers/html/box_manipulate.c b/src/content/handlers/html/box_manipulate.c
+index fb84c660..6dcd7b9d 100644
+--- a/src/content/handlers/html/box_manipulate.c
++++ b/src/content/handlers/html/box_manipulate.c
+@@ -34,6 +34,7 @@
+ #include <wisp/utils/errors.h>
+ #include <wisp/utils/log.h>
+ #include <wisp/utils/nsurl.h>
++#include "utils/arena.h"
+ #include "utils/talloc.h"
+ #include <string.h>
+
+@@ -51,13 +52,18 @@
+  * \param b The box being destroyed.
+  * \return 0 to allow talloc to continue destroying the tree.
+  */
+-static int box_talloc_destructor(void *ptr)
++static void box_talloc_destructor(void *ptr)
+ {
+     struct box *b = (struct box *)ptr;
+     struct html_scrollbar_data *data;
+
+-    if ((b->flags & STYLE_OWNED) && b->style != NULL) {
+-        css_computed_style_destroy(b->style);
++    if ((b->flags & STYLE_OWNED)) {
++        if (b->original_style != NULL) {
++            css_computed_style_destroy(b->original_style);
++            b->original_style = NULL;
++        } else if (b->style != NULL) {
++            css_computed_style_destroy(b->style);
++        }
+         b->style = NULL;
+     }
+
+@@ -95,7 +101,7 @@ static int box_talloc_destructor(void *ptr)
+     }
+
+
+-    return 0;
++    return;
+ }
+
+
+@@ -106,15 +112,15 @@ struct box *box_create(css_select_results *styles, css_computed_style *style, bo
+     unsigned int i;
+     struct box *box;
+
+-    box = talloc(context, struct box);
++    box = arena_alloc(context, sizeof(struct box));
+     if (!box) {
+         return 0;
+     }
+
+-    talloc_set_destructor(box, (int (*)(struct box *))box_talloc_destructor);
++    arena_register_destructor(context, box, box_talloc_destructor);
+
+     box->type = BOX_INLINE;
+-    box->flags = 0;
++    box->flags = DIRTY;
+     box->flags = style_owned ? (box->flags | STYLE_OWNED) : box->flags;
+     box->styles = styles;
+     box->style = style;
+@@ -273,18 +279,7 @@ void box_free(struct box *box)
+ /* Exported function documented in html/box.h */
+ void box_free_box(struct box *box)
+ {
+-    if (!(box->flags & CLONE)) {
+-        if (box->gadget)
+-            form_free_control(box->gadget);
+-        if (box->scroll_x != NULL)
+-            scrollbar_destroy(box->scroll_x);
+-        if (box->scroll_y != NULL)
+-            scrollbar_destroy(box->scroll_y);
+-        if (box->styles != NULL)
+-            css_select_results_destroy(box->styles);
+-    }
+-
+-    talloc_free(box);
++    /* Handled by arena destruction or box_talloc_destructor. */
+ }
+
+
+@@ -366,3 +361,27 @@ nserror box_handle_scrollbars(struct content *c, struct box *box, bool bottom, b
+
+     return NSERROR_OK;
+ }
++
++void box_mark_dirty(struct box *box)
++{
++    if (box == NULL) {
++        return;
++    }
++
++    if (box->flags & DIRTY) {
++        /* Already dirty, no need to propagate */
++        return;
++    }
++
++    box->flags |= DIRTY;
++
++    struct box *parent = box->parent;
++    while (parent != NULL) {
++        if (parent->flags & CHILD_DIRTY) {
++            /* Ancestor already knows it has a dirty child, stop propagating */
++            break;
++        }
++        parent->flags |= CHILD_DIRTY;
++        parent = parent->parent;
++    }
++}
+diff --git a/src/content/handlers/html/layout.c b/src/content/handlers/html/layout.c
+index 3c3e7ab3..f5cafe37 100644
+--- a/src/content/handlers/html/layout.c
++++ b/src/content/handlers/html/layout.c
+@@ -57,6 +57,7 @@
+ #include <wisp/utils/nsoption.h>
+ #include <wisp/utils/nsurl.h>
+ #include <wisp/utils/utils.h>
++#include "utils/arena.h"
+ #include "utils/talloc.h"
+ #include "desktop/scrollbar.h"
+
+@@ -322,7 +323,7 @@ layout_minmax_table(struct box *table, const struct gui_layout_table *font_func,
+     struct box *row_group, *row, *cell;
+
+     /* check if the widths have already been calculated */
+-    if (table->max_width != UNKNOWN_MAX_WIDTH)
++    if (table->max_width != UNKNOWN_MAX_WIDTH && !((table->flags & DIRTY) || (table->flags & CHILD_DIRTY)))
+         return;
+
+     if (table_calculate_column_types(&content->unit_len_ctx, table) == false) {
+@@ -355,9 +356,6 @@ layout_minmax_table(struct box *table, const struct gui_layout_table *font_func,
+             for (cell = row->children; cell; cell = cell->next) {
+                 assert(cell->type == BOX_TABLE_CELL);
+                 assert(cell->style);
+-                /** TODO: Handle colspan="0" correctly.
+-                 *        It's currently converted to 1 in box
+-                 * normaisation */
+                 assert(cell->columns != 0);
+
+                 if (cell->columns != 1)
+@@ -606,6 +604,18 @@ static struct box *layout_minmax_line(struct box *first, int *line_min, int *lin
+             continue;
+         }
+
++        if (b->type == BOX_INLINE_BLOCK &&
++            (css_computed_position(b->style) == CSS_POSITION_ABSOLUTE ||
++                css_computed_position(b->style) == CSS_POSITION_FIXED)) {
++            /* Abs-pos inline-blocks are out of flow (CSS 2.1 §9.3.2):
++             * compute own minmax for later use by layout_absolute,
++             * but don't contribute to parent's intrinsic width.
++             * Mirrors layout_minmax_block (L1053-1058) and
++             * layout_line pass 1 (L2788-2791). */
++            layout_minmax_block(b, font_func, content);
++            continue;
++        }
++
+         if (b->type == BOX_INLINE_BLOCK || b->type == BOX_INLINE_FLEX || b->type == BOX_INLINE_GRID) {
+             if (b->type == BOX_INLINE_GRID) {
+                 layout_minmax_grid(b, font_func, content);
+@@ -676,7 +686,7 @@ static struct box *layout_minmax_line(struct box *first, int *line_min, int *lin
+
+                     for (o = b->parent->parent->gadget->data.select.items; o; o = o->next) {
+                         int opt_width;
+-                        font_func->width(&fstyle, o->text, strlen(o->text), &opt_width);
++                        font_func->width(&fstyle, o->text, o->text_len, &opt_width);
+
+                         if (opt_maxwidth < opt_width)
+                             opt_maxwidth = opt_width;
+@@ -686,6 +696,15 @@ static struct box *layout_minmax_line(struct box *first, int *line_min, int *lin
+                     if (nsoption_bool(core_select_menu))
+                         b->width += SCROLLBAR_WIDTH;
+
++                } else if (b->text && b->length == 1 && b->text[0] == '\t') {
++                    int tab_size = 8; /* Default tab-size */
++                    int space_w = b->space;
++                    if (space_w == UNKNOWN_WIDTH) {
++                        font_func->width(&fstyle, " ", 1, &space_w);
++                    }
++                    /* For min/max width, use maximum possible tab width */
++                    b->width = tab_size * space_w;
++                    b->flags |= MEASURED;
+                 } else {
+                     font_func->width(&fstyle, b->text, b->length, &b->width);
+                     b->flags |= MEASURED;
+@@ -848,10 +867,11 @@ static void layout_minmax_inline_container(struct box *inline_container, bool *h
+     assert(inline_container->type == BOX_INLINE_CONTAINER);
+
+     /* check if the widths have already been calculated */
+-    if (inline_container->max_width != UNKNOWN_MAX_WIDTH)
++    if (inline_container->max_width != UNKNOWN_MAX_WIDTH && !((inline_container->flags & DIRTY) || (inline_container->flags & CHILD_DIRTY)))
+         return;
+
+-    *has_height = false;
++    if (has_height)
++        *has_height = false;
+
+     for (child = inline_container->children; child;) {
+         child = layout_minmax_line(child, &line_min, &line_max, first_line, &line_has_height, font_func, content);
+@@ -860,7 +880,8 @@ static void layout_minmax_inline_container(struct box *inline_container, bool *h
+         if (max < line_max)
+             max = line_max;
+         first_line = false;
+-        *has_height |= line_has_height;
++        if (has_height)
++            *has_height |= line_has_height;
+     }
+
+     inline_container->min_width.value = min;
+@@ -903,7 +924,7 @@ layout_minmax_block(struct box *block, const struct gui_layout_table *font_func,
+         block->type == BOX_TABLE_CELL);
+
+     /* check if the widths have already been calculated */
+-    if (block->max_width != UNKNOWN_MAX_WIDTH)
++    if (block->max_width != UNKNOWN_MAX_WIDTH && !((block->flags & DIRTY) || (block->flags & CHILD_DIRTY)))
+         return;
+
+     if (block->style != NULL) {
+@@ -1215,7 +1236,7 @@ void layout_minmax_box(struct box *box, const struct gui_layout_table *font_func
+ {
+
+     /* Check if already calculated */
+-    if (box->max_width != UNKNOWN_MAX_WIDTH)
++    if (box->max_width != UNKNOWN_MAX_WIDTH && !((box->flags & DIRTY) || (box->flags & CHILD_DIRTY)))
+         return;
+
+     switch (box->type) {
+@@ -1245,6 +1266,84 @@ void layout_minmax_box(struct box *box, const struct gui_layout_table *font_func
+ }
+
+
++/**
++ * Check if a box is out of normal flow (absolute or fixed positioned).
++ * CSS 2.1 §9.3: Out-of-flow elements don't participate in margin collapsing.
++ */
++static inline bool box_is_out_of_flow(const struct box *box)
++{
++    return box->style != NULL &&
++        (css_computed_position(box->style) == CSS_POSITION_ABSOLUTE ||
++            css_computed_position(box->style) == CSS_POSITION_FIXED);
++}
++
++/**
++ * Check if a box has vertical padding or borders that separate margins.
++ * CSS 2.1 §8.3.1: Padding and borders prevent adjoining margins.
++ */
++static inline bool box_has_vertical_separator(const struct box *box)
++{
++    return box->padding[TOP] || box->padding[BOTTOM] || box->border[TOP].width || box->border[BOTTOM].width;
++}
++
++/**
++ * Check if an inline container generates line boxes from in-flow content.
++ * CSS 2.1 §8.3.1: Only line boxes from in-flow content prevent collapsing.
++ * An inline container with only out-of-flow (abs/fixed) children does not
++ * generate line boxes.
++ */
++static inline bool box_inline_container_has_line_boxes(const struct box *box)
++{
++    for (struct box *c = box->children; c != NULL; c = c->next) {
++        if (!box_is_out_of_flow(c))
++            return true;
++    }
++    return false;
++}
++
++
++/**
++ * Check if a block box has at least one in-flow block-level child.
++ * CSS 2.1 §8.3.1: For margin collapse descent, only in-flow block-level
++ * children have margins that participate in the block margin chain.
++ * Inline containers (anonymous wrappers) do not have block margins and
++ * should not trigger descent — their content is evaluated separately
++ * via box_prevents_collapse_through.
++ */
++static inline bool box_has_in_flow_block_children(const struct box *box)
++{
++    for (struct box *c = box->children; c != NULL; c = c->next) {
++        if (c->type == BOX_BLOCK && !box_is_out_of_flow(c))
++            return true;
++    }
++    return false;
++}
++
++/**
++ * Check if a box prevents margins from collapsing through it.
++ * CSS 2.1 §8.3.1: A box's own margins collapse only if it has zero
++ * min-height, zero/auto height, no vertical padding/border, and does
++ * not contain a line box.
++ */
++static inline bool box_prevents_collapse_through(const struct box *box)
++{
++    if (box->flags & MAKE_HEIGHT)
++        return true;
++    if (box_has_vertical_separator(box))
++        return true;
++    if (box->type == BOX_INLINE_CONTAINER)
++        return box_inline_container_has_line_boxes(box);
++    /* A block whose IC children have line boxes has content
++     * even before layout sets MAKE_HEIGHT. */
++    if (box->type == BOX_BLOCK) {
++        for (struct box *c = box->children; c != NULL; c = c->next) {
++            if (c->type == BOX_INLINE_CONTAINER && box_inline_container_has_line_boxes(c))
++                return true;
++        }
++    }
++    return false;
++}
++
+ /**
+  * Find next block that current margin collapses to.
+  *
+@@ -1254,12 +1353,15 @@ void layout_minmax_box(struct box *box, const struct gui_layout_table *font_func
+  * \param  viewport_height  height of viewport in px
+  * \param  max_pos_margin  updated to to maximum positive margin encountered
+  * \param  max_neg_margin  updated to to maximum negative margin encountered
++ * \param  crossed_parent_child  set to true if the margin chain descended
++ *         into a child (parent-first-child collapse per CSS 2.1 §8.3.1)
+  * \return  next box that current margin collapses to, or NULL if none.
+  */
+ static struct box *layout_next_margin_block(const css_unit_ctx *unit_len_ctx, struct box *box, struct box *block,
+-    int viewport_height, unsigned int *max_pos_margin, unsigned int *max_neg_margin)
++    int viewport_height, unsigned int *max_pos_margin, unsigned int *max_neg_margin, bool *crossed_parent_child)
+ {
+     assert(block != NULL);
++    *crossed_parent_child = false;
+
+     while (box != NULL) {
+
+@@ -1278,10 +1380,12 @@ static struct box *layout_next_margin_block(const css_unit_ctx *unit_len_ctx, st
+                 if (box->margin[TOP] > 0 && (unsigned int)box->margin[TOP] > *max_pos_margin) {
+                     *max_pos_margin = (unsigned int)box->margin[TOP];
+                 } else if (box->margin[TOP] != AUTO && box->margin[TOP] < 0 &&
+-                    -(unsigned int)box->margin[TOP] > *max_neg_margin)
++                    -(unsigned int)box->margin[TOP] > *max_neg_margin) {
+                     *max_neg_margin = -(unsigned int)box->margin[TOP];
++                }
+             }
+
++
+             /* Check whether box is the box current margin collapses
+              * to */
+             if (box->flags & MAKE_HEIGHT || box->border[TOP].width || box->padding[TOP] ||
+@@ -1295,30 +1399,23 @@ static struct box *layout_next_margin_block(const css_unit_ctx *unit_len_ctx, st
+
+         /* Find next box */
+         if (box->type == BOX_BLOCK && !box->object && box->children && box->style &&
+-            css_computed_overflow_y(box->style) == CSS_OVERFLOW_VISIBLE) {
+-            /* Down into children. */
++            css_computed_overflow_y(box->style) == CSS_OVERFLOW_VISIBLE && box_has_in_flow_block_children(box)) {
++            /* Down into children — crossing a parent-child boundary.
++             * CSS 2.1 §8.3.1: margin may collapse with first child.
++             * Only descend for in-flow block-level children; inline
++             * containers are anonymous wrappers without block margins
++             * and are handled via box_prevents_collapse_through. */
++            *crossed_parent_child = true;
+             box = box->children;
+         } else {
+             bool walked_up = false;
+
+-            /* CSS 2.1 §8.3.1: Margins of a box collapse THROUGH it (top collapses
+-             * with bottom) only if:
+-             * - no top/bottom border
+-             * - no top/bottom padding
+-             * - height is 0 or auto
+-             * - no line boxes (content)
+-             *
+-             * If the box does NOT collapse through (has height/content), then its
+-             * Top margin does NOT collapse with its Bottom margin (and thus
+-             * does not collapse with Parent Bottom or Next Sibling Top).
+-             * We should NOT walk up in this case.
+-             */
+-            bool collapses_through = true;
+-            if ((box->flags & MAKE_HEIGHT) || box->padding[TOP] || box->padding[BOTTOM] || box->border[TOP].width ||
+-                box->border[BOTTOM].width || box->type == BOX_INLINE_CONTAINER) {
+-                /* BOX_INLINE_CONTAINER typically has text/line boxes, so it doesn't collapse through */
+-                collapses_through = false;
+-            }
++            /* CSS 2.1 §8.3.1: If the box does NOT collapse through
++             * (has height/content), then its Top margin does NOT
++             * collapse with its Bottom margin (and thus does not
++             * collapse with Parent Bottom or Next Sibling Top).
++             * We should NOT walk up in this case. */
++            bool collapses_through = !box_prevents_collapse_through(box);
+
+             if (!box->next && collapses_through) {
+                 /* No more siblings AND box collapses through:
+@@ -1362,11 +1459,17 @@ static struct box *layout_next_margin_block(const css_unit_ctx *unit_len_ctx, st
+             }
+
+             /* CSS 2.1 §8.3.1: "bottom margin of box and top margin of its
+-             * next in-flow following sibling" - only applies for DIRECT
+-             * siblings. If we walked up, this box is an ancestor, and its
+-             * margin-bottom is not adjacent to the first child's top margin
+-             * deep inside a nested element. */
+-            if (!walked_up && !box->padding[BOTTOM]) {
++             * next in-flow following sibling" — accumulate margin[BOTTOM]
++             * when moving to the next sibling.
++             *
++             * If we walked up from inside a child, the ancestor's
++             * margin-bottom is normally NOT adjacent to the child's top
++             * margin chain (it's at the bottom of the ancestor).
++             * EXCEPTION: if the ancestor itself collapses through
++             * (self-collapsing — no height, no in-flow content), then
++             * its top and bottom margins ARE adjoining, and the bottom
++             * margin is part of the same collapsing chain. */
++            if ((!walked_up || !box_prevents_collapse_through(box)) && !box->padding[BOTTOM]) {
+                 if (box->margin[BOTTOM] > 0 && (unsigned int)box->margin[BOTTOM] > *max_pos_margin) {
+                     *max_pos_margin = (unsigned int)box->margin[BOTTOM];
+                 } else if (box->margin[BOTTOM] != AUTO && box->margin[BOTTOM] < 0 &&
+@@ -1734,6 +1837,10 @@ static void layout_move_children(struct box *box, int x, int y)
+ /* Documented in layout_internal.h */
+ bool layout_table(struct box *table, int available_width, html_content *content)
+ {
++    if (!(table->flags & DIRTY) && !(table->flags & CHILD_DIRTY)) {
++        return true;
++    }
++
+     unsigned int columns = table->columns; /* total columns */
+     unsigned int i;
+     unsigned int *row_span;
+@@ -2044,6 +2151,13 @@ bool layout_table(struct box *table, int available_width, html_content *content)
+     table_height = border_spacing_v + table->padding[TOP];
+     for (row_group = table->children; row_group; row_group = row_group->next) {
+         int row_group_height = 0;
++
++        for (i = 0; i != columns; i++) {
++            row_span[i] = 0;
++            excess_y[i] = 0;
++            row_span_cell[i] = 0;
++        }
++
+         for (row = row_group->children; row; row = row->next) {
+             int row_height = 0;
+
+@@ -2200,6 +2314,8 @@ bool layout_table(struct box *table, int available_width, html_content *content)
+     table->width = table_width;
+     table->height = table_height;
+
++    table->flags &= ~(DIRTY | CHILD_DIRTY);
++
+     return true;
+ }
+
+@@ -2409,7 +2525,7 @@ static bool layout_text_box_split(
+         space_width = 0;
+
+     /* Create clone of split_box, c2 */
+-    c2 = talloc_memdup(content->bctx, split_box, sizeof *c2);
++    c2 = arena_memdup(content->bctx, split_box, sizeof *c2);
+     if (!c2)
+         return false;
+     c2->flags |= CLONE;
+@@ -2863,7 +2979,7 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+
+                     for (o = b->parent->parent->gadget->data.select.items; o; o = o->next) {
+                         int opt_width;
+-                        font_func->width(&fstyle, o->text, strlen(o->text), &opt_width);
++                        font_func->width(&fstyle, o->text, o->text_len, &opt_width);
+
+                         if (opt_maxwidth < opt_width)
+                             opt_maxwidth = opt_width;
+@@ -2871,6 +2987,19 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+                     b->width = opt_maxwidth;
+                     if (nsoption_bool(core_select_menu))
+                         b->width += SCROLLBAR_WIDTH;
++                } else if (b->text && b->length == 1 && b->text[0] == '\t') {
++                    int tab_size = 8;
++                    int space_w = b->space;
++                    if (space_w == UNKNOWN_WIDTH) {
++                        font_func->width(&fstyle, " ", 1, &space_w);
++                    }
++                    int tab_width = tab_size * space_w;
++                    if (tab_width > 0) {
++                        b->width = tab_width - (x % tab_width);
++                    } else {
++                        b->width = 0;
++                    }
++                    b->flags |= MEASURED;
+                 } else {
+                     font_func->width(&fstyle, b->text, b->length, &b->width);
+                     b->flags |= MEASURED;
+@@ -2883,7 +3012,21 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+              * correctly and to detect overflow (the estimate can be
+              * wrong for variable-width fonts and Unicode text). */
+             if (b->text && (x + b->width < x1 - x0) && !(b->flags & MEASURED)) {
+-                font_func->width(&fstyle, b->text, b->length, &b->width);
++                if (b->length == 1 && b->text[0] == '\t') {
++                    int tab_size = 8;
++                    int space_w = b->space;
++                    if (space_w == UNKNOWN_WIDTH) {
++                        font_func->width(&fstyle, " ", 1, &space_w);
++                    }
++                    int tab_width = tab_size * space_w;
++                    if (tab_width > 0) {
++                        b->width = tab_width - (x % tab_width);
++                    } else {
++                        b->width = 0;
++                    }
++                } else {
++                    font_func->width(&fstyle, b->text, b->length, &b->width);
++                }
+                 b->flags |= MEASURED;
+             }
+
+@@ -2952,7 +3095,8 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+     /* find new sides using this height */
+     x0 = cx;
+     x1 = cx + *width;
+-    find_sides(cont->float_children, cy, cy + height, &x0, &x1, &left, &right);
++    if (cont)
++        find_sides(cont->float_children, cy, cy + height, &x0, &x1, &left, &right);
+     x0 -= cx;
+     x1 -= cx;
+
+@@ -2968,6 +3112,32 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+
+     NSLOG(layout, DEBUG, "x0 %i, x1 %i, x1 - x0 %i", x0, x1, x1 - x0);
+
++    /* handle ::first-line style replacement */
++    if (indent && cont != NULL && cont->styles != NULL && cont->styles->styles[CSS_PSEUDO_ELEMENT_FIRST_LINE] != NULL) {
++        for (b = first; b; b = b->next) {
++            /* Save original style */
++            if (b->original_style == NULL) {
++                b->original_style = b->style;
++            }
++            /* We only want to apply FIRST_LINE style to boxes that are part of this line.
++             * The loop condition `x <= x1 - x0` stops when the line wraps. */
++            b->style = cont->styles->styles[CSS_PSEUDO_ELEMENT_FIRST_LINE];
++            if (b == split_box) {
++                break;
++            }
++        }
++    } else {
++        /* restore original style for subsequent lines if it was previously overridden */
++        for (b = first; b; b = b->next) {
++            if (b->original_style != NULL) {
++                b->style = b->original_style;
++            }
++            if (b == split_box) {
++                break;
++            }
++        }
++    }
++
+     for (x = x_previous = 0, b = first; x <= x1 - x0 && b; b = b->next) {
+
+         NSLOG(layout, DEBUG, "pass 2: b %p, x %i", b, x);
+@@ -2984,6 +3154,22 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+             x += space_after;
+             b->x = x;
+
++            if (b->text && b->length == 1 && b->text[0] == '\t') {
++                /* Calculate tab width based on current x offset */
++                int tab_size = 8; /* Default tab-size */
++                int space_w = b->space;
++                if (space_w == UNKNOWN_WIDTH) {
++                    font_plot_style_from_css(&content->unit_len_ctx, b->style, &fstyle);
++                    font_func->width(&fstyle, " ", 1, &space_w);
++                }
++                int tab_width = tab_size * space_w;
++                if (tab_width > 0) {
++                    b->width = tab_width - (x % tab_width);
++                } else {
++                    b->width = 0;
++                }
++            }
++
+             if ((b->type == BOX_INLINE && !b->inline_end) || b->type == BOX_INLINE_BLOCK ||
+                 b->type == BOX_INLINE_FLEX || b->type == BOX_INLINE_GRID) {
+                 b->x += b->margin[LEFT] + b->border[LEFT].width;
+@@ -3131,7 +3317,12 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+
+             font_plot_style_from_css(&content->unit_len_ctx, split_box->style, &fstyle);
+             /** \todo handle errors */
+-            font_func->split(&fstyle, split_box->text, split_box->length, x1 - x0 - x - space_before, &split, &w);
++            if (split_box->length == 1 && split_box->text[0] == '\t') {
++                /* A tab shouldn't be split */
++                split = 0;
++            } else {
++                font_func->split(&fstyle, split_box->text, split_box->length, x1 - x0 - x - space_before, &split, &w);
++            }
+         }
+
+         /* split == 0 implies that text can't be split */
+@@ -3331,6 +3522,10 @@ static bool layout_line(struct box *first, int *width, int *y, int cx, int cy, s
+ static bool layout_inline_container(
+     struct box *inline_container, int width, struct box *cont, int cx, int cy, html_content *content)
+ {
++    if (!(inline_container->flags & DIRTY) && !(inline_container->flags & CHILD_DIRTY)) {
++        return true;
++    }
++
+     bool first_line = true;
+     bool has_text_children;
+     struct box *c, *next;
+@@ -3387,11 +3582,12 @@ static bool layout_inline_container(
+         inline_container, inline_container->parent, inline_container->y, inline_container->height,
+         inline_container->parent ? inline_container->parent->list_marker : NULL);
+
++    inline_container->flags &= ~(DIRTY | CHILD_DIRTY);
+     return true;
+ }
+
+
+-/* Documented in layout_intertnal.h */
++/* Documented in layout_internal.h */
+ bool layout_block_context(struct box *block, int viewport_height, html_content *content)
+ {
+     struct box *box;
+@@ -3406,6 +3602,10 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+     css_fixed gadget_size;
+     css_unit gadget_unit; /* Checkbox / radio buttons */
+
++    if (!(block->flags & DIRTY) && !(block->flags & CHILD_DIRTY)) {
++        return true;
++    }
++
+     assert(block->type == BOX_BLOCK || block->type == BOX_INLINE_BLOCK || block->type == BOX_TABLE_CELL ||
+         block->type == BOX_FLEX || block->type == BOX_GRID || block->type == BOX_INLINE_FLEX ||
+         block->type == BOX_INLINE_GRID);
+@@ -3539,10 +3739,22 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+         /* If we don't know which box the current margin collapses
+          * through to, find out.  Update the pos/neg margin values. */
+         if (margin_collapse == NULL) {
+-            margin_collapse = layout_next_margin_block(
+-                &content->unit_len_ctx, box, block, viewport_height, &max_pos_margin, &max_neg_margin);
++            bool margin_from_child = false;
++            margin_collapse = layout_next_margin_block(&content->unit_len_ctx, box, block, viewport_height,
++                &max_pos_margin, &max_neg_margin, &margin_from_child);
+             /* We have a margin that has not yet been applied. */
+             in_margin = true;
++
++            /* CSS 2.1 §8.3.1: If the margin chain descended into a
++             * first child (no border/padding separator), the collapsed
++             * margin pushes the PARENT down, not the child inside
++             * the parent. Apply the margin here to the current box. */
++            if (margin_from_child && in_margin) {
++                cy += (int)max_pos_margin - (int)max_neg_margin;
++                box->y += (int)max_pos_margin - (int)max_neg_margin;
++                in_margin = false;
++                max_pos_margin = max_neg_margin = 0;
++            }
+         }
+
+         /* Clearance. */
+@@ -3653,7 +3865,9 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+
+         /* Vertical margin */
+         if (((box->type == BOX_BLOCK && (box->flags & HAS_HEIGHT)) || box->type == BOX_FLEX || box->type == BOX_GRID ||
+-                box->type == BOX_TABLE || box->type == BOX_INLINE_CONTAINER || margin_collapse == box) &&
++                box->type == BOX_TABLE ||
++                (box->type == BOX_INLINE_CONTAINER && box_inline_container_has_line_boxes(box)) ||
++                margin_collapse == box) &&
+             in_margin == true) {
+             /* Margin goes above this box. */
+             NSLOG(wisp, INFO, "MARGIN_COLLAPSE: box=%p type=%d cy_before=%d max_pos_margin=%u max_neg_margin=%u", box,
+@@ -3676,7 +3890,7 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+
+         /* Unless the box has an overflow style of visible, the box
+          * establishes a new block context. */
+-        if (box->type == BOX_FLEX || box->type == BOX_GRID ||
++        if (box->type == BOX_FLEX || box->type == BOX_INLINE_FLEX || box->type == BOX_GRID ||
+             (box->type == BOX_BLOCK && box->style &&
+                 (overflow_x != CSS_OVERFLOW_VISIBLE || overflow_y != CSS_OVERFLOW_VISIBLE))) {
+
+@@ -3699,15 +3913,10 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+                     tag, cls, box, overflow_x, overflow_y, css_computed_flex_wrap(box->style),
+                     box->parent ? box->parent->width : 0, box->width);
+                 NSLOG(layout, DEBUG, "calling layout_flex for flex container %p width %i", box, box->width);
+-                if (box->type == BOX_FLEX) {
++                if (box->type == BOX_FLEX || box->type == BOX_INLINE_FLEX) {
+                     if (!layout_flex(box, box->width, content)) {
+                         return false;
+                     }
+-                } else {
+-                    /* Inline flex handled as block flex here if needed, or pass TODO */
+-                    /* Ideally call layout_flex but check if it supports INLINE_FLEX */
+-                    /* Assuming layout_flex handles it or we rely on block behavior for now */
+-                    /* fprintf(stderr, "Handling INLINE_FLEX %p in block context\n", box); */
+                 }
+                 NSLOG(layout, DEBUG, "flex post: box %p, w %i, h %i", box, box->width, box->height);
+                 if (class_attr != NULL)
+@@ -3832,12 +4041,12 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+                     margin_collapse = NULL;
+                 }
+
+-                /* Apply bottom margin (skip if AUTO to prevent overflow) */
+-                if (box->margin[BOTTOM] != AUTO && max_pos_margin < box->margin[BOTTOM]) {
+-
+-                    max_pos_margin = box->margin[BOTTOM];
+-                } else if (box->margin[BOTTOM] != AUTO && max_neg_margin < -box->margin[BOTTOM])
+-                    max_neg_margin = -box->margin[BOTTOM];
++                /* Apply bottom margin */
++                if (box->margin[BOTTOM] > 0 && (unsigned int)box->margin[BOTTOM] > max_pos_margin) {
++                    max_pos_margin = (unsigned int)box->margin[BOTTOM];
++                } else if (box->margin[BOTTOM] != AUTO && box->margin[BOTTOM] < 0 &&
++                    (unsigned int)(-box->margin[BOTTOM]) > max_neg_margin)
++                    max_neg_margin = (unsigned int)(-box->margin[BOTTOM]);
+
+                 box = box->parent;
+
+@@ -3846,12 +4055,22 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+
+                 /* Margin is invalidated if this is a box
+                  * margins can't collapse through.
+-                 * CSS 2.1 §8.3.1: margins can't collapse through if:
+-                 * - box has explicit height (MAKE_HEIGHT)
+-                 * - box has non-zero padding-bottom
+-                 * - box has non-zero border-bottom */
++                 * CSS 2.1 §8.3.1: last-child bottom margin collapses
++                 * with parent only if parent has:
++                 * - height: auto (no MAKE_HEIGHT)
++                 * - min-height: 0
++                 * - no bottom padding
++                 * - no bottom border */
++                bool has_min_height = false;
++                if (box->style) {
++                    css_fixed mh_val;
++                    css_unit mh_unit;
++                    if (css_computed_min_height(box->style, &mh_val, &mh_unit) == CSS_MIN_HEIGHT_SET && mh_val > 0)
++                        has_min_height = true;
++                }
+                 if (box->type == BOX_BLOCK &&
+-                    ((box->flags & MAKE_HEIGHT) || box->padding[BOTTOM] != 0 || box->border[BOTTOM].width != 0)) {
++                    ((box->flags & MAKE_HEIGHT) || has_min_height || box->padding[BOTTOM] != 0 ||
++                        box->border[BOTTOM].width != 0)) {
+
+                     margin_collapse = NULL;
+                     in_margin = false;
+@@ -3902,12 +4121,20 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+             margin_collapse = NULL;
+         }
+
+-        /* Apply bottom margin (skip if AUTO to prevent overflow) */
+-        if (box->margin[BOTTOM] != AUTO && max_pos_margin < box->margin[BOTTOM]) {
+-
+-            max_pos_margin = box->margin[BOTTOM];
+-        } else if (box->margin[BOTTOM] != AUTO && max_neg_margin < -box->margin[BOTTOM])
+-            max_neg_margin = -box->margin[BOTTOM];
++        /* Apply bottom margin.
++         * CSS 2.1 §8.3.1: a self-collapsing block's margins were already
++         * accumulated by layout_next_margin_block (which traverses through
++         * parent-child chains). Do NOT accumulate them again here, or we
++         * get double-application when the main loop's inline descent
++         * reprocesses the same box. */
++        if (!box_prevents_collapse_through(box) && !(box->flags & MAKE_HEIGHT) && box->height == 0) {
++            /* Self-collapsing: margins already handled by
++             * layout_next_margin_block. Skip. */
++        } else if (box->margin[BOTTOM] > 0 && (unsigned int)box->margin[BOTTOM] > max_pos_margin) {
++            max_pos_margin = (unsigned int)box->margin[BOTTOM];
++        } else if (box->margin[BOTTOM] != AUTO && box->margin[BOTTOM] < 0 &&
++            (unsigned int)(-box->margin[BOTTOM]) > max_neg_margin)
++            max_neg_margin = (unsigned int)(-box->margin[BOTTOM]);
+
+         /* Mark that we have a pending margin to apply to the next sibling.
+          * CSS 2.1 §8.3.1: "The bottom margin of an in-flow block-level
+@@ -3916,7 +4143,8 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+         in_margin = true;
+
+         box = box->next;
+-        box->y = y;
++        if (box)
++            box->y = y;
+     }
+
+     /* Account for bottom margin of last contained block */
+@@ -3952,6 +4180,8 @@ bool layout_block_context(struct box *block, int viewport_height, html_content *
+             block->padding[RIGHT], block->padding[BOTTOM], block->padding[LEFT]);
+     }
+
++    block->flags &= ~(DIRTY | CHILD_DIRTY);
++
+     return true;
+ }
+
+@@ -4250,7 +4480,7 @@ static void layout__set_numerical_marker_text(const html_content *content, struc
+         LIST_MARKER_SIZE = 20,
+     };
+
+-    marker->text = talloc_array(content->bctx, char, LIST_MARKER_SIZE);
++    marker->text = arena_alloc(content->bctx, LIST_MARKER_SIZE);
+     if (marker->text == NULL) {
+         return;
+     }
+@@ -4261,7 +4491,7 @@ static void layout__set_numerical_marker_text(const html_content *content, struc
+         if (counter_len >= LIST_MARKER_SIZE) {
+             /* Use computed size as marker did not fit in
+              * default allocation. */
+-            marker->text = talloc_realloc(content->bctx, marker->text, char, counter_len + 1);
++            marker->text = arena_alloc(content->bctx, counter_len + 1);
+             if (marker->text == NULL) {
+                 return;
+             }
